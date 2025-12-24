@@ -74,9 +74,6 @@ class FoodStats(BaseModel):
 
 
     
-
-
-    
     
 
     

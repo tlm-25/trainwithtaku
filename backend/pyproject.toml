@@ -104,6 +104,7 @@ dependencies = [
     "pydantic-settings==2.11.0",
     "pygments==2.19.2",
     "pyjwt==2.10.1",
+    "pymongo>=4.15.5",
     "pypdf==6.1.1",
     "pypika==0.48.9",
     "pyproject-hooks==1.2.0",
