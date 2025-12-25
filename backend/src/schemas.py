@@ -72,7 +72,12 @@ class FoodStats(BaseModel):
 
     
 
-
+class UserSignUpForm(BaseModel):
+    email:str
+    username:str
+    password:str
+    user_type:str
+    confirm_password:str
     
     
 
