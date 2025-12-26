@@ -78,10 +78,14 @@ def check_if_passwords_match(password:str,confirm_password:str)->bool:
     '''
         Ensure that the 'password' and 'confirm password' fields match
 
-        Arg(s):
+            :param password: user input in password field
+            :type password: str
+            :param confirm_password: user input in 'confirm password' field
+            :type confirm_password: str
+            :return: True or False - checking if passwords match
+            :rtype: bool
 
-            password (str) - user input in password field
-            confirm_password (str) - user input in 'confirm password' field
+
     
     '''
 
@@ -96,6 +100,50 @@ def check_if_passwords_match(password:str,confirm_password:str)->bool:
         return False
 
 
+def validate_input_form(email_input:str,password_input:str,confirm_password_input:str)->tuple[bool,str]:
+    #list to store any error messages relating to incorrect formatting of the input fields
+    input_format_error_messages = []
+
+
+    
+    #check that email does not already exist
+
+    #check that email is valid format
+    is_email_valid_format = validate_email_format(email_address=email_input)
+
+    if not is_email_valid_format:
+        input_format_error_messages.append("Email format not valid")
+    
+    
+
+    #check that password is valid format
+    is_password_valid_format = validate_password_format(password=password_input)
+
+    if not is_password_valid_format:
+        input_format_error_messages.append(f"Password it not valid format. It must contain:\n 1. lowercase and uppercase letters\n 2. At least 8 characters\n 3. at least one number\n 4. At least 1 special character")
+
+
+    #check that password matches 
+    password_fields_match_match = check_if_passwords_match(password=password_input,confirm_password=confirm_password_input)
+
+    if not password_fields_match_match:
+        input_format_error_messages.append(f"'Password' and 'Confirm Password' fields do not match")
+
+    input_format_error_messages_string = " | ".join(input_format_error_messages)
+
+
+    all_user_inputs_formats_valid = is_email_valid_format and is_password_valid_format and password_fields_match_match
+
+    if len(input_format_error_messages) == 0:
+
+        logging.info("Successfully added new user")
+
+        return True, "Successfully added new user"
+    
+    else:
+        logging.info(f"Failed to add new user: {input_format_error_messages_string}")
+        return False, input_format_error_messages_string
+    
 
 
 #Check if user exists in database

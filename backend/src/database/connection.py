@@ -5,6 +5,8 @@ import pytest_asyncio
 import logging
 
 
+#function for connection to client, database and containers - creating seperate functions for ease of debugging and testing for CI/CD 
+
 #mark with pytest_asyncio so that the result can be passed into pytest function for testing - dependency injection - makes the client accessible in async tests
 @pytest_asyncio.fixture
 async def get_mongo_client():
@@ -33,8 +35,9 @@ async def get_mongo_client():
         
     except Exception as e:
         logging.error(f"failed to connect: {e}")
-        yield f"failed to connect {e}"
+        raise(f"failed to connect {e}")
 
+#function for testing purposes only - make sure database can be connectied to
 @pytest_asyncio.fixture
 async def create_or_get_database():
     '''
@@ -47,14 +50,29 @@ async def create_or_get_database():
             yield database
     
     except Exception as e:
-          yield f"failed to connect to database {DATABASE_NAME}: {e}"
+          raise RuntimeError(f"failed to connect to database {DATABASE_NAME}: {e}")
 
-# @pytest_asyncio.fixture
-# async def create_or_get_container():
-#      '''
-#         Create new database or get exsiting database
-#     '''   
+
+
+async def create_or_get_collection(collection_name:str):
+    '''
+        Create new collection or get exsiting collection
+        collection_name (str) - name of function that we want to get or collect
+    '''   
      
-#      try: 
+    try: 
+        async with AsyncMongoClient(host=MONGO_DB_CONNECTION_STRING,serverSelectionTimeoutMS=10000) as mongo_client:
+            database = mongo_client[DATABASE_NAME]
+
+            collection = database[collection_name]
+            yield collection
+    except Exception as e:
+         raise RuntimeError(
+            f"Failed to access collection '{collection_name}' in database '{DATABASE_NAME}': {e}"
+        )
+         
+
+    
+               
         
     

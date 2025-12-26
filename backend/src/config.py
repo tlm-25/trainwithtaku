@@ -7,3 +7,5 @@ load_dotenv()
 MONGO_DB_CONNECTION_STRING = os.getenv("MONGO_DB_CONNECTION_STRING")
 
 DATABASE_NAME = "trainwithtaku_web"
+
+USER_ACCOUNTS_COLLECTION_NAME = "user_accounts"
