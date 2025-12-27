@@ -2,8 +2,9 @@
 from src.database.connection import create_or_get_collection, create_or_get_database
 from src.database.user_management.sign_up_form import  validate_input_form
 from src.database.user_management.password import hash_password,is_correct_password 
+from src.database.user_management.utils import check_if_email_already_in_use
 from src.config import USER_ACCOUNTS_COLLECTION_NAME
-from src.schemas import UserSignUpForm
+from src.schemas import UserSignUpForm, UserLoginForm
 import bcrypt
 
 #mongo db
@@ -59,7 +60,18 @@ async def add_user(user_sign_up_form:UserSignUpForm,database:AsyncCollection=Dep
 
     #if any of the input fields are invalid
     if not check_form_valid:
-        return JSONResponse(content={"message":f"Failed to sign up: {form_submit_message}"},status_code=422)
+
+        #if user already exists
+        if "already in use" in form_submit_message.lower():
+            #  409 error code (request conflict, with current state of resource)
+            error_code = 409
+        else:
+            # 422 error code (unprocessable entity) - inputs not in correct format
+            error_code = 422
+
+            
+        return JSONResponse(content={"message":f"Failed to sign up: {form_submit_message}"},status_code=error_code)
+
 
     # if the input fields are all valid
     else: 
@@ -71,7 +83,9 @@ async def add_user(user_sign_up_form:UserSignUpForm,database:AsyncCollection=Dep
         #otherwise, add the new user to the database (username, hashed password, user_type)
         new_user = { "email": email_input,"password":hashed_password, "user_type": user_type_input }
 
-        
+        #TODO - function to send user confirmation email with passcode etc.?
+
+        #insert new user to database
         inserted_documents = await users_collection.insert_one(document=new_user)
         
         return JSONResponse(content={"message":f"{form_submit_message}"},status_code=200)
@@ -93,5 +107,52 @@ async def add_user(user_sign_up_form:UserSignUpForm,database:AsyncCollection=Dep
 
 #authenticate user
 @app.post("/authenticate_user")
-async def authenticate_user(email:str,password:str):
-    pass
+async def authenticate_user(user_login_form:UserLoginForm,database:AsyncCollection=Depends(create_or_get_database)):
+    '''
+    User authentication - Check that the email and password are correct
+    
+    :param user_login_form: Information collected from the login form (email address and password )
+    :type user_login_form: UserLoginForm
+    '''
+
+    incorrect_details_message = "Incorrect email or password. Please ensure they are spelt correctly. If you do not have an account, please create one first."
+    successful_login_message = "successfully logged in"
+
+    email_input = user_login_form.email
+    password_input = user_login_form.password
+
+    # collection with user account information
+    main_database = database
+    users_collection = main_database[USER_ACCOUNTS_COLLECTION_NAME]
+
+    #check if email address can be found
+    check_if_user_exists = await check_if_email_already_in_use(email_input=email_input,collection=users_collection)
+
+    # if user with password exists
+    if check_if_user_exists:
+
+        user_info = await users_collection.find_one(filter={"email":email_input},projection={"_id":True,"user":True,"password":True})
+
+        #check if (hashed) passwords match for the corresponding user
+        is_password_correct = is_correct_password(password_string=password_input,hashed_password=user_info["password"])
+        if is_password_correct:
+            
+            return JSONResponse(content={"message":successful_login_message}, status_code=200)
+        else:
+            return JSONResponse(content={"message":incorrect_details_message}, status_code=401)
+    else:
+
+        return JSONResponse(content={"message":incorrect_details_message}, status_code=401)
+
+
+
+
+
+    
+
+    #check if password correct 
+
+
+
+#todo - user forgot password 
+

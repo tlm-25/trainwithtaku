@@ -77,6 +77,10 @@ class UserSignUpForm(BaseModel):
     password:str
     user_type:str
     confirm_password:str
+
+class UserLoginForm(BaseModel):
+    email:str
+    password:str
     
     
 

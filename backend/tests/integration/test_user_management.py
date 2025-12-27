@@ -1,7 +1,8 @@
 
 from src.main import app
-from src.schemas import UserSignUpForm
+from src.schemas import UserSignUpForm, UserLoginForm
 from src.database.connection import create_or_get_database
+from src.database.user_management.utils import check_if_email_already_in_use
 from src.config import TEST_DATABASE_NAME, MONGO_DB_CONNECTION_STRING
 
 from pymongo import AsyncMongoClient
@@ -71,22 +72,73 @@ async def test_invalid_email_format_user_sign_up():
         assert "email" in response.json()["message"].lower() and "invalid" in  response.json()["message"].lower()
 
 @pytest.mark.asyncio
-async def test_email_already_exists():
+async def test_email_already_exists_sign_up():
     '''
     Test that we can correctly identify that an email is already in use - (created a document in collection to test). This test that assumes an email
     with the address 'existing_email@gmail.com' is in the 'user_accounts' collection within the test database
     '''
+    with TestClient(app=app) as client:
+        existing_email = "existing_email@gmail.com"
+        password = "Codeword1!!"
+        confirm_password = password
+        user_type = "trainee"
+        test_user_details = UserSignUpForm(email=existing_email,password=password,confirm_password=confirm_password,user_type=user_type)
+        test_user_details_mock_json = test_user_details.model_dump()
+        response =  client.post(url="/add_user",json=test_user_details_mock_json)
+        assert response.status_code == 409
+        assert "already in use" in response.json()["message"].lower()
+        
 
-    existing_email = "existing_email@gmail.com"
-    password = "Codeword1!!"
-    confirm_password = password
-    user_type = "trainee"
-    test_user_details = UserSignUpForm(email=existing_email,password=password,confirm_password=confirm_password,user_type=user_type)
-    test_user_details_mock_json = test_user_details.model_dump()
-    response =  client.post(url="/add_user",json=test_user_details_mock_json)
-    assert response.status_code == 422
-    assert "already in use" in response.json()["message"].lower()
-    
+@pytest.mark.asyncio
+async def test_succesful_login():
+    '''
+    Test successful login scenario
+    '''
+
+    with TestClient(app=app) as client:
+        existing_email = "existing_email@gmail.com"
+        password = "Codeword1!!"
+        test_user_details = UserLoginForm(email=existing_email,password=password)
+        test_user_details_mock_json = test_user_details.model_dump()
+        response =  client.post(url="/authenticate_user",json=test_user_details_mock_json)
+        assert "success" in response.json()["message"].lower()
+        assert response.status_code == 200
+
+
+@pytest.mark.asyncio 
+async def test_incorrect_password():
+    '''
+    Test incorrect password scenario
+    '''
+
+    with TestClient(app=app) as client:
+        existing_email = "existing_email@gmail.com"
+        #incorrect password for the email
+        password = "Codeword1!"
+        test_user_details = UserLoginForm(email=existing_email,password=password)
+        test_user_details_mock_json = test_user_details.model_dump()
+        response =  client.post(url="/authenticate_user",json=test_user_details_mock_json)
+        assert "incorrect" in response.json()["message"].lower()
+        assert response.status_code == 401
+        
+@pytest.mark.asyncio 
+async def test_incorrect_email():
+    '''
+    Test incorrect email scenario
+    '''
+
+    with TestClient(app=app) as client:
+        existing_email = "existin_email@gmail.com"
+        #incorrect password for the email
+        password = "Codeword1!!"
+        test_user_details = UserLoginForm(email=existing_email,password=password)
+        test_user_details_mock_json = test_user_details.model_dump()
+        response =  client.post(url="/authenticate_user",json=test_user_details_mock_json)
+        assert "incorrect" in response.json()["message"].lower()
+        assert response.status_code == 401
+        
+
+
 
 
 
