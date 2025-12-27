@@ -1,6 +1,6 @@
 from pymongo import AsyncMongoClient, MongoClient
 import os 
-from src.config import MONGO_DB_CONNECTION_STRING, DATABASE_NAME
+from src.config import MONGO_DB_CONNECTION_STRING, DATABASE_NAME, TEST_DATABASE_NAME
 import pytest_asyncio
 import logging
 
@@ -37,11 +37,11 @@ async def get_mongo_client():
         logging.error(f"failed to connect: {e}")
         raise(f"failed to connect {e}")
 
-#function for testing purposes only - make sure database can be connectied to
-@pytest_asyncio.fixture
+
+
 async def create_or_get_database():
     '''
-        Create new database or get exsiting database
+        Create new database or get exsiting database within the collection
     
     '''
     try:
@@ -51,6 +51,7 @@ async def create_or_get_database():
     
     except Exception as e:
           raise RuntimeError(f"failed to connect to database {DATABASE_NAME}: {e}")
+
 
 
 

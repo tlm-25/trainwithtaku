@@ -2,7 +2,7 @@ from validators import email
 import logging
 import jwt 
 import re
-
+from pymongo.asynchronous.collection import AsyncCollection
 
 
 # make sure email address is valid - email being used as username
@@ -100,7 +100,29 @@ def check_if_passwords_match(password:str,confirm_password:str)->bool:
         return False
 
 
-def validate_input_form(email_input:str,password_input:str,confirm_password_input:str)->tuple[bool,str]:
+async def check_if_email_already_in_use(email_input:str,collection:AsyncCollection)->bool:
+    '''
+    Check if an email is alreadu in use check_if_email_already_in_use
+    
+    :param email_input: Email input value
+    :type email_input: str
+    :param collection: Description
+    :type collection: AsyncCollection
+    :return: True/False
+    :rtype: bool
+    '''
+    #check if email already in use - only return value the default "_id" field, not the other fields (save memory) 
+    is_email_already_in_use = await collection.find_one(filter={"email":email_input},projection={"_id":True})
+    #if email is already in 
+    if is_email_already_in_use:
+        return True
+    else:
+        return False
+
+
+
+
+async def validate_input_form(email_input:str,password_input:str,confirm_password_input:str,collection:AsyncCollection)->tuple[bool,str]:
     #list to store any error messages relating to incorrect formatting of the input fields
     input_format_error_messages = []
 
@@ -112,15 +134,21 @@ def validate_input_form(email_input:str,password_input:str,confirm_password_inpu
     is_email_valid_format = validate_email_format(email_address=email_input)
 
     if not is_email_valid_format:
-        input_format_error_messages.append("Email format not valid")
+        input_format_error_messages.append("Email format invalid")
     
+    email_already_in_use = await check_if_email_already_in_use(email_input=email_input,collection=collection)
+    
+    if email_already_in_use:
+        input_format_error_messages.append(f"The email address '{email_input}' is already in use. If it is your account, please sign in, or use a different email")
+        
+
     
 
     #check that password is valid format
     is_password_valid_format = validate_password_format(password=password_input)
 
     if not is_password_valid_format:
-        input_format_error_messages.append(f"Password it not valid format. It must contain:\n 1. lowercase and uppercase letters\n 2. At least 8 characters\n 3. at least one number\n 4. At least 1 special character")
+        input_format_error_messages.append(f"Password is not valid format. It must contain:\n 1. lowercase and uppercase letters\n 2. At least 8 characters\n 3. at least one number\n 4. At least 1 special character")
 
 
     #check that password matches 
@@ -132,7 +160,7 @@ def validate_input_form(email_input:str,password_input:str,confirm_password_inpu
     input_format_error_messages_string = " | ".join(input_format_error_messages)
 
 
-    all_user_inputs_formats_valid = is_email_valid_format and is_password_valid_format and password_fields_match_match
+    all_user_inputs_formats_valid = is_email_valid_format and (not email_already_in_use) and is_password_valid_format and password_fields_match_match
 
     if len(input_format_error_messages) == 0:
 
@@ -147,10 +175,6 @@ def validate_input_form(email_input:str,password_input:str,confirm_password_inpu
 
 
 #Check if user exists in database
-
-
-
-#handle 'forgot your password' - send user an email
 
 
 

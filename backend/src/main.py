@@ -1,5 +1,5 @@
 #custom modules 
-from src.database.connection import create_or_get_collection
+from src.database.connection import create_or_get_collection, create_or_get_database
 from src.database.user_management.sign_up_form import  validate_input_form
 from src.database.user_management.password import hash_password,is_correct_password 
 from src.config import USER_ACCOUNTS_COLLECTION_NAME
@@ -31,7 +31,7 @@ app = FastAPI()
 
 #create user 
 @app.post("/add_user")
-async def add_user(user_sign_up_form:UserSignUpForm,users_collection:AsyncCollection=Depends(create_or_get_collection(collection_name=USER_ACCOUNTS_COLLECTION_NAME)))->JSONResponse:
+async def add_user(user_sign_up_form:UserSignUpForm,database:AsyncCollection=Depends(create_or_get_database))->JSONResponse:
     '''
         Add new user to the database 
 
@@ -41,6 +41,9 @@ async def add_user(user_sign_up_form:UserSignUpForm,users_collection:AsyncCollec
         :type user_collection: pymongo.asynchronous.collection.AsyncCollection
          
     '''
+    main_database = database
+    # user_accounts_collection = await create_or_get_collection(collection_name=USER_ACCOUNTS_COLLECTION_NAME)
+    users_collection = main_database[USER_ACCOUNTS_COLLECTION_NAME]
 
     # user input fields - email, password, password confirmation and user type
     email_input = user_sign_up_form.email
@@ -49,7 +52,7 @@ async def add_user(user_sign_up_form:UserSignUpForm,users_collection:AsyncCollec
     user_type_input = user_sign_up_form.user_type
 
     #check that all the forms are a valid format
-    check_form_valid,form_submit_message = validate_input_form(email_input=email_input,password_input=password_input,confirm_password_input=confirm_password_input)
+    check_form_valid,form_submit_message = await validate_input_form(email_input=email_input,password_input=password_input,confirm_password_input=confirm_password_input,collection=users_collection)
 
 
 
@@ -68,9 +71,8 @@ async def add_user(user_sign_up_form:UserSignUpForm,users_collection:AsyncCollec
         #otherwise, add the new user to the database (username, hashed password, user_type)
         new_user = { "email": email_input,"password":hashed_password, "user_type": user_type_input }
 
-        # user_accounts_collection = await create_or_get_collection(collection_name=USER_ACCOUNTS_COLLECTION_NAME)
-
-        inserted_documents = users_collection.insert_one(document=new_user)
+        
+        inserted_documents = await users_collection.insert_one(document=new_user)
         
         return JSONResponse(content={"message":f"{form_submit_message}"},status_code=200)
 
