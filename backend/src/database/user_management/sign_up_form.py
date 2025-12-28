@@ -143,7 +143,7 @@ async def validate_input_form(email_input:str,password_input:str,confirm_passwor
 
     all_user_inputs_formats_valid = is_email_valid_format and (not email_already_in_use) and is_password_valid_format and password_fields_match_match
 
-    if len(input_format_error_messages) == 0:
+    if all_user_inputs_formats_valid:
 
         logging.info("Successfully added new user")
 
