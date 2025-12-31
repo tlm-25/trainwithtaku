@@ -9,6 +9,7 @@ import bcrypt
 
 #mongo db
 from pymongo import AsyncMongoClient
+from pymongo.asynchronous.database import AsyncDatabase
 from pymongo.asynchronous.collection import AsyncCollection
 
 from fastapi import FastAPI, Depends
@@ -32,7 +33,7 @@ app = FastAPI()
 
 #create user 
 @app.post("/add_user")
-async def add_user(user_sign_up_form:UserSignUpForm,database:AsyncCollection=Depends(create_or_get_database))->JSONResponse:
+async def add_user(user_sign_up_form:UserSignUpForm,database:AsyncDatabase=Depends(create_or_get_database))->JSONResponse:
     '''
         Add new user to the database 
 
@@ -107,7 +108,7 @@ async def add_user(user_sign_up_form:UserSignUpForm,database:AsyncCollection=Dep
 
 #authenticate user
 @app.post("/authenticate_user")
-async def authenticate_user(user_login_form:UserLoginForm,database:AsyncCollection=Depends(create_or_get_database)):
+async def authenticate_user(user_login_form:UserLoginForm,database:AsyncDatabase=Depends(create_or_get_database)):
     '''
     User authentication - Check that the email and password are correct
     

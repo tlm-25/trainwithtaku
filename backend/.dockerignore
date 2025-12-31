@@ -1,0 +1,4 @@
+tests/
+pdf_documents/
+src/database/scripts/
+*.log
