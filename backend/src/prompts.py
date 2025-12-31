@@ -48,8 +48,4 @@ Only include HIIT training if they specifically ask for it, they are training fr
 Consider any exercises or sports they may start to take an interest in.
 If they like dancing, suggest spin class or dance class as cardio. 
 The step target will be the main cardio. Incorporate any other sports activities they do that they may like. Consider this when planning resistance training 
-
-
- 
-
 """

@@ -81,7 +81,18 @@ class UserSignUpForm(BaseModel):
 class UserLoginForm(BaseModel):
     email:str
     password:str
-    
+
+class ChatMessage(BaseModel):
+    message:str
+    type:str
+    timestamp:str
+
+
+class Conversation(BaseModel):
+    id:str
+    conversation_id:str
+    messages:List[dict]
+    email:str
     
 
     
