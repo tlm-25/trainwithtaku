@@ -89,10 +89,10 @@ class ChatMessage(BaseModel):
 
 
 class Conversation(BaseModel):
-    id:str
     conversation_id:str
     messages:List[dict]
     email:str
     
-
+class UserEmail(BaseModel):
+    email:str
     

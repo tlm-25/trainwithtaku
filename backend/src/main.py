@@ -3,8 +3,10 @@ from src.database.connection import create_or_get_collection, create_or_get_data
 from src.database.user_management.sign_up_form import  validate_input_form
 from src.database.user_management.password import hash_password,is_correct_password 
 from src.database.user_management.utils import check_if_email_already_in_use
-from src.config import USER_ACCOUNTS_COLLECTION_NAME
-from src.schemas import UserSignUpForm, UserLoginForm
+from src.chatbot.chat_history import get_all_stored_user_chats, get_specific_stored_user_chat
+
+from src.config import USER_ACCOUNTS_COLLECTION_NAME, CHAT_COLLECTION_NAME, TEST_CHAT_COLLECTION_NAME
+from src.schemas import UserSignUpForm, UserLoginForm, UserEmail, ChatMessage, Conversation
 import bcrypt
 
 #mongo db
@@ -91,21 +93,6 @@ async def add_user(user_sign_up_form:UserSignUpForm,database:AsyncDatabase=Depen
         
         return JSONResponse(content={"message":f"{form_submit_message}"},status_code=200)
 
-
-
-
-        
-
-
-
-
-
-
-
-    
-    
-
-
 #authenticate user
 @app.post("/authenticate_user")
 async def authenticate_user(user_login_form:UserLoginForm,database:AsyncDatabase=Depends(create_or_get_database)):
@@ -129,10 +116,10 @@ async def authenticate_user(user_login_form:UserLoginForm,database:AsyncDatabase
     #check if email address can be found
     check_if_user_exists = await check_if_email_already_in_use(email_input=email_input,collection=users_collection)
 
-    # if user with password exists
+    # if user exists and password is correct
     if check_if_user_exists:
-
-        user_info = await users_collection.find_one(filter={"email":email_input},projection={"_id":True,"user":True,"password":True})
+        #retriever user info and log them in
+        user_info = await users_collection.find_one(filter={"email":email_input},projection={"_id":False,"user":True,"password":True})
 
         #check if (hashed) passwords match for the corresponding user
         is_password_correct = is_correct_password(password_string=password_input,hashed_password=user_info["password"])
@@ -149,10 +136,54 @@ async def authenticate_user(user_login_form:UserLoginForm,database:AsyncDatabase
 
 
 
-    
+
+
+@app.post("/get_stored_user_chats")
+async def get_stored_user_chats(user_email:UserEmail,database:AsyncDatabase=Depends(create_or_get_database)):
+
+    try:
+        '''
+        Retrieve all stored conversations for a given user email from the database
+
+        :param email: User's email address
+        :type email: str
+        :param database: MongoDB database instance
+        :type database: pymongo.asynchronous.database.AsyncDatabase
+        :return: List of conversations associated with the user
+        :rtype: list[dict]
+        '''
+        main_database = database
+        conversations_collection = main_database[CHAT_COLLECTION_NAME]
+        stored_chats = await get_all_stored_user_chats(email=user_email.email,conversations_collection=conversations_collection)
+        return JSONResponse(content=stored_chats, status_code=200)
+    except Exception as e:  
+        message =   f"Failed to retrieve stored chats: {e}" 
+        logging.error(message) 
+        return JSONResponse(content={"message":message}, status_code=500)
 
 
 
+@app.post("/get_chat_history/{conversation_id}")
+async def get_chat_history(conversation_id:str,database:AsyncDatabase=Depends(create_or_get_database)):
 
-#todo - user forgot password 
+    try:
+        '''
+        Retrieve all stored conversations for a given user email from the database
+
+        :param email: User's email address
+        :type email: str
+        :param database: MongoDB database instance
+        :type database: pymongo.asynchronous.database.AsyncDatabase
+        :return: List of conversations associated with the user
+        :rtype: list[dict]
+        '''
+        main_database = database
+        conversations_collection = main_database[CHAT_COLLECTION_NAME]
+        chat_history = await get_specific_stored_user_chat(conversation_id=conversation_id,conversations_collection=conversations_collection)
+        return JSONResponse(content=chat_history, status_code=200)
+    except Exception as e:  
+        message =   f"Failed to retrieve stored chats: {e}" 
+        logging.error(message) 
+        return JSONResponse(content={"message":message}, status_code=500)
+
 
