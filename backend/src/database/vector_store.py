@@ -28,7 +28,7 @@ TEXT_SPLITTER = RecursiveCharacterTextSplitter(
 
 )
 
-EMBEDDINGS = get_embedding_model()
+
 
 
   
@@ -44,6 +44,7 @@ async def generate_documents(source_type:str,url:str=None,pdf_path:str=None)->li
         :rtype: list[Document]
     
     '''
+    
     
     doc_source = source_type.lower()
     
@@ -76,13 +77,14 @@ async def generate_documents(source_type:str,url:str=None,pdf_path:str=None)->li
         raise ValueError("source must be either 'web' or 'pdf'")
 
 async def upload_to_vector_store(database:AsyncDatabase,documents:list[Document],collection_name:str):
+    embeddings = await get_embedding_model()
     vector_store_collection = database[collection_name]
 
     document_data = []
     for document in documents:
 
         # Generate embedding for each document
-        embedding = EMBEDDINGS.embed_documents([document.page_content])
+        embedding = embeddings.embed_documents([document.page_content])
         # Add embedding to document metadata
 
         document_data.append({

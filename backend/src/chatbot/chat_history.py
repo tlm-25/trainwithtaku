@@ -1,24 +1,8 @@
 
 from pymongo.asynchronous.collection import AsyncCollection
 
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-# async def get_previous_chat_history(conversation_id:str,chat_history_collection)->list[Chat]:
-#     '''
-#         Retrieve previous chat history for a given conversation ID from the database
-
-#         :param conversation_id: Unique identifier for the conversation
-#         :type conversation_id: str
-#         :param chat_history_collection: MongoDB collection storing chat histories
-#         :type chat_history_collection: pymongo.asynchronous.collection.AsyncCollection
-#         :return: List of Chat objects representing the chat history
-#         :rtype: list[Chat]
-#     '''
-#     chat_history_cursor = chat_history_collection.find({"conversation_id":conversation_id}).sort("timestamp",1)
-#     chat_history_list = []
-#     async for chat_record in chat_history_cursor:
-#         chat_history_list.append(Chat(**chat_record))
-    
-#     return chat_history_list
 
 async def get_specific_stored_user_chat(conversation_id:str,conversations_collection:AsyncCollection)->dict:
     '''
@@ -35,8 +19,8 @@ async def get_specific_stored_user_chat(conversation_id:str,conversations_collec
 
     
     # get all the messages stored for a specific conversation for specific user - using cursor to so only a portion of chats loaded at a time - set projection to exclude _id field (avoid errors when sending to endpoint) - JSONREsponse can't serialize ObjectId type
-    messages =  await conversations_collection.find_one({"conversation_id":conversation_id},projection={"_id":False})
-    print(messages)
+    chat_info =  await conversations_collection.find_one({"conversation_id":conversation_id},projection={"_id":False})
+    messages = chat_info["messages"]
 
     return messages
 
@@ -61,3 +45,18 @@ async def get_all_stored_user_chats(email:str,conversations_collection:AsyncColl
         conversations_list.append(conversation_record)
 
     return conversations_list
+
+
+async def convert_chat_history_to_langchain_format(chat_history:list[dict])->list[HumanMessage | AIMessage | SystemMessage]:
+    '''
+        Retrieve previous chat history - to be implemented
+    '''
+    langchain_formatted_chat_history = []
+    for message in chat_history:
+        if message["type"] == "user":
+            langchain_formatted_chat_history.append(HumanMessage(content=message["message"]))
+        elif message["type"] == "bot":
+            langchain_formatted_chat_history.append(AIMessage(content=message["message"]))
+        elif message["type"] == "system":
+            langchain_formatted_chat_history.append(SystemMessage(content=message["message"]))
+    return langchain_formatted_chat_history

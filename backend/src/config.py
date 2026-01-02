@@ -15,8 +15,15 @@ TEST_USER_ACCOUNTS_COLLECTION_NAME = "user_accounts"
 VECTOR_STORE_COLLECTION_NAME = "monyai_context_vectors"
 TEST_VECTOR_STORE_COLLECTION_NAME = "monyai_context_vectors"
 
+
+MONGO_VECTOR_INDEX_NAME = "VectorSearchChatbot"
+TEST_MONGO_VECTOR_INDEX_NAME = "VectorSearchTest"
+
 CHAT_COLLECTION_NAME= "monyai_chats"
 TEST_CHAT_COLLECTION_NAME= "monyai_chats"
+
+TOP_K = 5
+
 
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")

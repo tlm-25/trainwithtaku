@@ -61,6 +61,5 @@ async def test_get_specific_stored_chat():
     with TestClient(app=app) as client:
         conversation_id = "3434343-34234243-1231"      
         response = client.post(url=f"/get_chat_history/{conversation_id}")
-
         assert response.status_code == 200
-        assert  len(response.json()["messages"]) == 2 #assuming there are 2 messages in the stored chat for the test conversation id
+        assert  len(response.json()) == 2 #assuming there are 2 messages in the stored chat for the test conversation id

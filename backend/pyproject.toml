@@ -67,6 +67,7 @@ dependencies = [
     "langchain-chroma==0.2.6",
     "langchain-community==0.3.31",
     "langchain-core==0.3.79",
+    "langchain-mongodb>=0.7.2",
     "langchain-openai==0.3.35",
     "langchain-text-splitters==0.3.11",
     "langsmith==0.4.34",
