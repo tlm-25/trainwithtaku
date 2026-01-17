@@ -18,6 +18,7 @@ class ClientForm(BaseModel):
     gender: str
     current_bodyweight_kg: float
     goal_bodyweight_kg: Optional[float]=None
+    injuries:str
     height_cm:int
     primary_fitness_goal:str
     current_activity_level:str
@@ -33,9 +34,15 @@ class ClientForm(BaseModel):
     days_available_to_train_per_week:int
     liked_exercises:Optional[str]=None
     disliked_exercises:Optional[str]=None
-    current_average_steps_per_day:Optional[int] = None
     
     
+
+
+class ChatRequest(BaseModel):
+    user_query:str
+    chat_history:list[dict]
+    client_form:ClientForm
+
 
 
 class ClientNutritionRequirements(BaseModel):

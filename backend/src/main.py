@@ -4,9 +4,9 @@ from src.database.user_management.sign_up_form import  validate_input_form
 from src.database.user_management.password import hash_password,is_correct_password 
 from src.database.user_management.utils import check_if_email_already_in_use
 from src.chatbot.chat_history import get_all_stored_user_chats, get_specific_stored_user_chat
-
-from src.config import USER_ACCOUNTS_COLLECTION_NAME, CHAT_COLLECTION_NAME, TEST_CHAT_COLLECTION_NAME
-from src.schemas import UserSignUpForm, UserLoginForm, UserEmail, ChatMessage, Conversation
+from src.chatbot.chat_response import stream_chatbot_response
+from src.config import USER_ACCOUNTS_COLLECTION_NAME, CHAT_COLLECTION_NAME, TEST_CHAT_COLLECTION_NAME,VECTOR_STORE_COLLECTION_NAME
+from src.schemas import UserSignUpForm, UserLoginForm, UserEmail,ClientForm, ChatRequest
 import bcrypt
 
 #mongo db
@@ -186,4 +186,20 @@ async def get_chat_history(conversation_id:str,database:AsyncDatabase=Depends(cr
         logging.error(message) 
         return JSONResponse(content={"message":message}, status_code=500)
 
+@app.post("/chat")
+async def generate_chatbot_response(chat_request:ChatRequest,database:AsyncDatabase=Depends(create_or_get_database)):
+    '''
+    :param chat_request
+    :type chat_request ChatRequest 
+     
+    '''
+    main_database = database
+    vector_store_collection = main_database[VECTOR_STORE_COLLECTION_NAME]
 
+    response = StreamingResponse(stream_chatbot_response(user_query=chat_request.user_query,chat_history=chat_request.chat_history,vector_store_collection=vector_store_collection,client_form=chat_request.client_form))
+
+    return response
+    
+
+
+ 

@@ -1,1 +1,109 @@
+from src.retrieval import CustomAsyncMongoDBAtlasRetriever, create_training_retrieval_query_from_form_and_user_query, format_documents_for_prompt
+from src.chatbot.chat_history import convert_chat_history_to_langchain_format
+from src.config import LLM_VERSION, OPENAI_API_KEY, VECTOR_STORE_COLLECTION_NAME, MONGO_VECTOR_INDEX_NAME
+
+from src.schemas import ClientForm
+from src.prompts import TRAINING_PROGRAM_PROMPT_CONCISE, MEAL_PLANNING_PROMPT
+
+from langchain_core.prompts.chat import ChatPromptTemplate, MessagesPlaceholder, HumanMessagePromptTemplate
+from langchain.chains import history_aware_retriever
+from langchain.schema import Document
+from langchain_openai import ChatOpenAI
+from langchain_core.runnables import RunnablePassthrough, RunnableParallel,RunnableLambda
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from pymongo.asynchronous.collection import AsyncCollection
+
+CHAT_MODEL = ChatOpenAI(
+    model=LLM_VERSION,
+    openai_api_key=OPENAI_API_KEY,
+    temperature=0.1
+
+)
+
+
+TRAINING_RETRIEVAL_QUERY_TEMPLATE = """
+
+USER QUERY
+- Query: {user_query}
+
+CLIENT DATA 
+- Activity Level: {current_activity_level} 
+- Occupation: {current_occupation}
+- Daily step count: {current_average_steps_per_day}
+- Main fitness goal: {primary_fitness_goal}
+- Training days per week: {days_available_to_train_per_week}
+- Training location: {preferred_location}
+- Training equipment available: {equipment_available}
+- Injury or pain history:{injuries}
+"""
+
+
+# PROMPT = ChatPromptTemplate.from_template(template=TRAINING_PROGRAM_PROMPT_CONCISE)
+
+# PROMPT = ChatPromptTemplate.from_messages([SystemMessage(content=TRAINING_PROGRAM_PROMPT_CONCISE), MessagesPlaceholder(variable_name="chat_history"), HumanMessagePromptTemplate.from_template(template="{query}")])
+
+
+
+# create chain for chatbot giving general responses and specialised for training program
+
+
+
+
+
+async def stream_chatbot_response(user_query:str,chat_history:list[dict],vector_store_collection:AsyncCollection,client_form:ClientForm):
+    '''
+    Stream chatbot response based on user query, relevant client form data, and chat history
+
+    :param user_query: User's query
+    :type user_query: str
+    :param client_form: Client form data
+    :type client_form: ClientForm
+    :param chat_history: Chat history
+    :type chat_history: list[dict]
+    :return: Streamed chatbot response
+    :rtype: AsyncGenerator[str]
+    '''
+
+    
+
+
+
+    #retrieve relevant documents based on use query and client form data
+    retrieval_query = create_training_retrieval_query_from_form_and_user_query(retrieval_query_template=TRAINING_RETRIEVAL_QUERY_TEMPLATE,client_form=client_form,user_query=user_query)
+
+    async_mongodb_retriever = CustomAsyncMongoDBAtlasRetriever(vector_store_collection=vector_store_collection,mongo_index_name=MONGO_VECTOR_INDEX_NAME)
+    #get the relevant documents
+    retrieved_documents = await async_mongodb_retriever.ainvoke(input=retrieval_query)
+
+    string_formatted_documents = format_documents_for_prompt(documents=retrieved_documents)
+
+    chat_prompt = ChatPromptTemplate.from_messages([("system",TRAINING_PROGRAM_PROMPT_CONCISE)])
+
+    # fill in the {retrieved_docs} placeholder in system prompt with the retrieved documents
+    messages = chat_prompt.format_messages(retrieved_docs=string_formatted_documents)
+
+    #convert chat history to langchain format 
+    langchain_formatted_chat_history = await convert_chat_history_to_langchain_format(chat_history=chat_history)
+
+    #add the chat history as context
+    messages.extend(langchain_formatted_chat_history)
+    
+    #get info from client form
+    client_form_dict = client_form.model_dump()
+
+    client_form_text = "FORM INFO:"+ "\n".join(f"{k}: {v}" for k, v in client_form_dict.items())
+
+    # add information from client form to context
+    messages.append(HumanMessage(content=client_form_text))
+
+
+    messages.append(HumanMessage(content=user_query))
+    
+
+    response = CHAT_MODEL.astream(messages)
+
+    async for chunk in response:
+        text_chunk = chunk.content
+        yield text_chunk
+
+        

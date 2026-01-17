@@ -44,13 +44,11 @@ async def create_or_get_database():
         Create new database or get exsiting database within the collection
     
     '''
-    try:
-        async with AsyncMongoClient(host=MONGO_DB_CONNECTION_STRING,serverSelectionTimeoutMS=10000) as mongo_client:
-            database = mongo_client[DATABASE_NAME]
-            yield database
-    
-    except Exception as e:
-          raise RuntimeError(f"failed to connect to database {DATABASE_NAME}: {e}")
+    async with AsyncMongoClient(host=MONGO_DB_CONNECTION_STRING,serverSelectionTimeoutMS=10000) as mongo_client:
+        database = mongo_client[DATABASE_NAME]
+        yield database
+
+
 
 
 

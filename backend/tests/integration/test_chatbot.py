@@ -1,7 +1,9 @@
 from src.database.connection import get_mongo_client, create_or_get_database, create_or_get_collection
 from src.chatbot.chat_history import get_all_stored_user_chats
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from src.chatbot.chat_response import stream_chatbot_response
 from src.config import CHAT_COLLECTION_NAME, TEST_CHAT_COLLECTION_NAME, TEST_DATABASE_NAME, MONGO_DB_CONNECTION_STRING
-from src.schemas import UserEmail, Conversation
+from src.schemas import UserEmail, ClientForm,Conversation
 from src.main import app
 
 
@@ -18,13 +20,12 @@ async def create_or_get_test_database():
     '''
     Database for testing only
     '''
-    try:
-        async with AsyncMongoClient(host=MONGO_DB_CONNECTION_STRING,serverSelectionTimeoutMS=10000) as mongo_client:
-            database = mongo_client[TEST_DATABASE_NAME]
-            yield database
+
+    async with AsyncMongoClient(host=MONGO_DB_CONNECTION_STRING,serverSelectionTimeoutMS=10000) as mongo_client:
+        database = mongo_client[TEST_DATABASE_NAME]
+        yield database
     
-    except Exception as e:
-          raise RuntimeError(f"failed to connect to database {TEST_DATABASE_NAME}: {e}")
+
 
 app.dependency_overrides[create_or_get_database] = create_or_get_test_database
 
@@ -63,3 +64,58 @@ async def test_get_specific_stored_chat():
         response = client.post(url=f"/get_chat_history/{conversation_id}")
         assert response.status_code == 200
         assert  len(response.json()) == 2 #assuming there are 2 messages in the stored chat for the test conversation id
+
+
+@pytest.mark.asyncio
+async def test_stream_chatbot_response():
+    '''
+        Test that chatbot gives appropriate response
+    
+    '''
+
+    with TestClient(app=app) as client:
+
+        user_query = "I need a simple workout program"
+
+        #example chats - mimicks the structure of chats extracted from the database
+        test_chat_history = [
+        {"type":"bot","message":"Hi, I'm Monyai your fitness assistant! Ask me any fitness or nutrition related questions.",'timestamp': '2026-01-01 11:37:11.409816'}]
+                            
+        test_client_form = ClientForm(  
+        email="test@gmail.com",
+        age=23,
+        gender="male",
+        allergies="None",
+        current_bodyweight_kg=70,
+        height_cm=175,
+        current_activity_level="sedentary",
+        current_occupation="office worker",
+        current_average_steps_per_day=3000,
+        primary_fitness_goal="fat loss",
+        days_available_to_train_per_week=3,
+        preferred_foods="chicken, rice, vegetables",
+        preferred_no_meals=3,
+        preferred_location="home",
+        equipment_available="dumbbells, resistance bands",
+        dietary_restrictions="None",
+        injuries="None")
+
+        print(user_query)
+
+
+        # send a sample
+        with client.stream("POST","/chat",json={
+            "user_query": user_query,
+            "chat_history": test_chat_history,
+            "client_form": test_client_form.model_dump()
+            }) as response:
+
+            chunks = list(response.iter_text())
+
+            
+
+        print(chunks)
+        assert all(isinstance(chunk,str) for chunk in chunks)
+
+
+

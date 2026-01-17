@@ -49,7 +49,7 @@ async def get_all_stored_user_chats(email:str,conversations_collection:AsyncColl
 
 async def convert_chat_history_to_langchain_format(chat_history:list[dict])->list[HumanMessage | AIMessage | SystemMessage]:
     '''
-        Retrieve previous chat history - to be implemented
+        Retrieve previous chat history as dict and return list of langchain formatted message objects 
     '''
     langchain_formatted_chat_history = []
     for message in chat_history:
