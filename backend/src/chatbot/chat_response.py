@@ -66,7 +66,8 @@ async def stream_chatbot_response(user_query:str,chat_history:list[dict],vector_
 
     
 
-
+    #get info from client form
+    client_form_dict = client_form.model_dump()
 
     #retrieve relevant documents based on use query and client form data
     retrieval_query = create_training_retrieval_query_from_form_and_user_query(retrieval_query_template=TRAINING_RETRIEVAL_QUERY_TEMPLATE,client_form=client_form,user_query=user_query)
@@ -77,10 +78,12 @@ async def stream_chatbot_response(user_query:str,chat_history:list[dict],vector_
 
     string_formatted_documents = format_documents_for_prompt(documents=retrieved_documents)
 
+    client_form_text = "FORM INFO:"+ "\n".join(f"{k}: {v}" for k, v in client_form_dict.items())
+
     chat_prompt = ChatPromptTemplate.from_messages([("system",TRAINING_PROGRAM_PROMPT_CONCISE)])
 
     # fill in the {retrieved_docs} placeholder in system prompt with the retrieved documents
-    messages = chat_prompt.format_messages(retrieved_docs=string_formatted_documents)
+    messages = chat_prompt.format_messages(retrieved_docs=string_formatted_documents,client_info=client_form_text)
 
     #convert chat history to langchain format 
     langchain_formatted_chat_history = await convert_chat_history_to_langchain_format(chat_history=chat_history)
@@ -88,10 +91,9 @@ async def stream_chatbot_response(user_query:str,chat_history:list[dict],vector_
     #add the chat history as context
     messages.extend(langchain_formatted_chat_history)
     
-    #get info from client form
-    client_form_dict = client_form.model_dump()
+    
 
-    client_form_text = "FORM INFO:"+ "\n".join(f"{k}: {v}" for k, v in client_form_dict.items())
+    
 
     # add information from client form to context
     messages.append(HumanMessage(content=client_form_text))

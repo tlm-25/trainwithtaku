@@ -31,3 +31,5 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 EMBEDDING_MODEL_NAME = "text-embedding-3-large"
 
 LLM_VERSION = "gpt-4o-mini"
+
+

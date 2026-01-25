@@ -6,7 +6,7 @@ from src.database.user_management.utils import check_if_email_already_in_use
 from src.chatbot.chat_history import get_all_stored_user_chats, get_specific_stored_user_chat
 from src.chatbot.chat_response import stream_chatbot_response
 from src.config import USER_ACCOUNTS_COLLECTION_NAME, CHAT_COLLECTION_NAME, TEST_CHAT_COLLECTION_NAME,VECTOR_STORE_COLLECTION_NAME
-from src.schemas import UserSignUpForm, UserLoginForm, UserEmail,ClientForm, ChatRequest
+from src.schemas import UserSignUpForm, UserLoginForm, UserEmail,ClientForm, ChatRequest, Conversation
 import bcrypt
 
 #mongo db
@@ -22,11 +22,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 #Context management
 from contextlib import asynccontextmanager
-
-
+import uuid
 import logging
+from datetime import datetime
 #configuration for logging file
-logging.basicConfig(filename='src/log_files/chat_data.log', level=logging.DEBUG)
 
 
 app = FastAPI()
@@ -200,6 +199,60 @@ async def generate_chatbot_response(chat_request:ChatRequest,database:AsyncDatab
 
     return response
     
+@app.post("/create_new_chat/{email}")
+async def create_new_chat(email:str,database:AsyncDatabase=Depends(create_or_get_database)):
+        '''
+        Create a new converstion
+        
+            :param: email: Email of the user creating the chat
+            :type email: str
+
+            :param: create_new_chat
+            :type  database: AsyncDatabase
+        '''
+        #generate random string to represent the chat id
+        conversation_id = str(uuid.uuid4())
+
+        #default greeting message for the chatbot
+        now_datetime_string = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        default_message = {"type":"bot","message":"Hi, I'm Monyai your fitness assistant! Ask me any fitness or nutrition related questions.",'timestamp': now_datetime_string}
+
+
+        new_chat = Conversation(conversation_id=conversation_id,messages=[default_message],email=email)
+
+        new_chat_dict = new_chat.model_dump()
+
+        conversations_collection = database[CHAT_COLLECTION_NAME]
+
+        try:
+            #insert new user to database
+            inserted_conversation = await conversations_collection.insert_one(document=new_chat_dict)
+
+            message = {"message":"successfully created new chat","conversation_id":conversation_id}
+            logging.info(message)
+
+
+            return JSONResponse(content=message,status_code=201)
+        
+        except Exception as e:
+
+            message = {message:f"failed to create new chat: {e}",conversation_id:"n/a"}
+            logging.info(message)
+
+
+            return JSONResponse(content=message,status_code=409)
+
+
+
+
+        
+
+        
+
+        
+        
+
+
 
 
  

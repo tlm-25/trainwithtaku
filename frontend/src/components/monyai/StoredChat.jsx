@@ -36,7 +36,7 @@ function StoredChat(props){
 
             
             //get the specific chat from the chat history 
-            const response = await fetch(`/get_chat_history/${frontEndToken}`,{
+            const response = await fetch(`http://localhost:8000/get_chat_history/${frontEndToken}`,{
             method: 'POST'
 
             })
@@ -64,17 +64,17 @@ function StoredChat(props){
         //get the previous frontend token compared to the one that's been selected
         const originalChatArraySize = allStoredChatsState.length
 
-        // const previousChatID = allStoredChatsState[allStoredChatsState.length-2].frontend_token
+        // const previousChatID = allStoredChatsState[allStoredChatsState.length-2].conversation_id
 
         // //frontend token of the next element in the array
-        const currentChatIndex = allStoredChatsState.findIndex(chat => chat.frontend_token ===frontEndToken )
+        const currentChatIndex = allStoredChatsState.findIndex(chat => chat.conversation_id ===frontEndToken )
 
         
         
 
 
 
-        // const firstChatID = allStoredChatsState[0].frontend_token
+        // const firstChatID = allStoredChatsState[0].conversation_id
 
 
         //if user changes mind about deleting chat and clicks 'no' when they are asked to confirm, delete the chat
@@ -89,14 +89,14 @@ function StoredChat(props){
 
 
         if (!chatSelectedFlag) {
-            const response = await fetch(`/delete_chat/${frontEndToken}`, {
+            const response = await fetch(`http://localhost:8000/delete_chat/${frontEndToken}`, {
             method: "DELETE",
             });
 
             if (!response.ok) return;
 
             setAllStoredChatsFunction(prev =>
-            prev.filter(chat => chat.frontend_token !== frontEndToken)
+            prev.filter(chat => chat.conversation_id !== frontEndToken)
             );
 
             if (allStoredChatsState.length === 1) {
@@ -110,7 +110,7 @@ function StoredChat(props){
 
         // //update the allStoredChats array
         // setAllStoredChatsFunction(prev =>
-        // prev.filter(chat => chat.frontend_token !== frontEndToken)
+        // prev.filter(chat => chat.conversation_id !== frontEndToken)
         // );
 
 
@@ -126,7 +126,7 @@ function StoredChat(props){
 
                 //if there exists a chat after the chat we are currently on
                 if(currentChatIndex + 1 < allStoredChatsState.length) {
-                    targetChatID = allStoredChatsState[currentChatIndex + 1].frontend_token
+                    targetChatID = allStoredChatsState[currentChatIndex + 1].conversation_id
 
 
                 }
@@ -134,18 +134,18 @@ function StoredChat(props){
                 //if there is no chat after the one we are currently on and there is a chat before it - select the chat before
                 else if (currentChatIndex - 1 >= 0) {
 
-                    targetChatID = allStoredChatsState[currentChatIndex - 1].frontend_token
+                    targetChatID = allStoredChatsState[currentChatIndex - 1].conversation_id
 
                 }
 
 
-                const response = await fetch(`/delete_chat/${frontEndToken}`, {
+                const response = await fetch(`http://localhost:8000/delete_chat/${frontEndToken}`, {
                 method: "DELETE",
                 });
 
 
                 setAllStoredChatsFunction(prev =>
-                 prev.filter(chat => chat.frontend_token !== frontEndToken)
+                 prev.filter(chat => chat.conversation_id !== frontEndToken)
                 );
 
                
@@ -158,13 +158,13 @@ function StoredChat(props){
             //if we delete the last chat
             else {
 
-                const response = await fetch(`/delete_chat/${frontEndToken}`, {
+                const response = await fetch(`http://localhost:8000/delete_chat/${frontEndToken}`, {
                 method: "DELETE",
                 });
 
 
                 setAllStoredChatsFunction(prev =>
-                 prev.filter(chat => chat.frontend_token !== frontEndToken)
+                 prev.filter(chat => chat.conversation_id !== frontEndToken)
                 );
 
                 //set the chatSelected state false to indicate that no chat is selected

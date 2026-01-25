@@ -1,5 +1,5 @@
 from src.retrieval import  CustomAsyncMongoDBAtlasRetriever
-from src.config import MONGO_DB_CONNECTION_STRING,TEST_DATABASE_NAME,TEST_VECTOR_STORE_COLLECTION_NAME,TEST_MONGO_VECTOR_INDEX_NAME, TOP_K
+from src.config import MONGO_DB_CONNECTION_STRING,TEST_DATABASE_NAME,VECTOR_STORE_COLLECTION_NAME,TEST_MONGO_VECTOR_INDEX_NAME, TOP_K
 from src.schemas import ClientForm
 from langchain.schema import Document
 from pymongo import AsyncMongoClient
@@ -27,7 +27,7 @@ async def test_vector_search():
     #get the test database
     test_mongo_database = await create_or_get_test_database().__anext__()
     #get the test collection
-    test_vector_store_collection = test_mongo_database[TEST_VECTOR_STORE_COLLECTION_NAME]
+    test_vector_store_collection = test_mongo_database[VECTOR_STORE_COLLECTION_NAME]
 
 
 
@@ -57,7 +57,7 @@ async def test_failed_attempted_synchronous_vector_search():
     #get the test database
     test_mongo_database = await create_or_get_test_database().__anext__()
     #get the test collection
-    test_vector_store_collection = test_mongo_database[TEST_VECTOR_STORE_COLLECTION_NAME]
+    test_vector_store_collection = test_mongo_database[VECTOR_STORE_COLLECTION_NAME]
 
     # async mongo driver 
     async_mongodb_retriever = CustomAsyncMongoDBAtlasRetriever(vector_store_collection=test_vector_store_collection,mongo_index_name=TEST_MONGO_VECTOR_INDEX_NAME)

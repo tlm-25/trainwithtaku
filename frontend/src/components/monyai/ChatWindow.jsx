@@ -13,7 +13,7 @@ function ChatWindow() {
     //list of all chats created by the user
     const [allCreatedChats,setAllCreatedChats] = useState([]);
 
-    //the frontend token of the current selected chat (not the conversation id of the backend)
+    //the conversation id of the current selected chat (not the conversation id of the backend)
     const [currentChatID,setCurrentChatID] = useState(null)
     //check if user is currently creating a chat or not
     const [creatingChat, setCreatingChat] = useState(false)
@@ -92,7 +92,7 @@ function ChatWindow() {
     const clearChatHistory = async (event) => {
         event.preventDefault();
         try{
-            const response = await fetch(`/clear_chat/${currentChatID}`, {
+            const response = await fetch(`http://localhost:8000/clear_chat/${currentChatID}`, {
                 method: 'POST'
             });
 
@@ -120,7 +120,7 @@ function ChatWindow() {
         setCreatingChat(true)
 
         //add the new chat to the database
-        const response = await fetch("/create_new_chat",{
+        const response = await fetch("http://localhost:8000/create_new_chat",{
             method: "POST"
 
         })
@@ -132,7 +132,7 @@ function ChatWindow() {
 
         setCreatingChat(false)
 
-        return data.frontend_token
+        return data.conversation_id
 
         
 
@@ -170,7 +170,7 @@ function ChatWindow() {
         }); 
 
         //get cancel endpoint (with specific query id)
-        const cancelEndpoint = `/cancel_response/${queryID}`
+        const cancelEndpoint = `http://localhost:8000/cancel_response/${queryID}`
         fetch(cancelEndpoint,{
             method: "POST"
         }).then(res=>res.json()).then(console.log("cancelled")).catch(err => console.error("Failed to cancel", err));
@@ -216,7 +216,7 @@ function ChatWindow() {
 
         try {
             // The API call to our FastAPI backend
-            const response = await fetch(`/chat/${frontendEndToken}`, {
+            const response = await fetch(`http://localhost:8000/monyai/chat/${frontendEndToken}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type: 'user', message: userInput,timestamp:String(now) }),
@@ -352,7 +352,7 @@ function ChatWindow() {
             const newChatID = await createNewChat(event)
 
             //get the specific chat from the chat history 
-            const response = await fetch(`/get_chat_history/${newChatID}`,{
+            const response = await fetch(`http://localhost:8000/monyai/get_chat_history/${newChatID}`,{
             method: 'POST'
 
             })
@@ -395,7 +395,7 @@ function ChatWindow() {
             <div className='main-chatbot-container'>
 
                 <div className="chat-selection-container">
-                    <img  src='../../../public/twt-logo.png' className='twt-logo'/> 
+                    <img  src='/twt-logo.png' className='twt-logo'/> 
                     <button disabled={creatingChat} onClick={(event)=>createNewChat(event)}>
                         + New Chat
                     </button>
@@ -404,7 +404,7 @@ function ChatWindow() {
                         
                         {allCreatedChats.map((storedChat,index)=>(
 
-                                <StoredChat key={String(index)+storedChat.frontend_token} index = {index+1} frontEndToken = {storedChat.frontend_token} setChatLogFunction={setChatLog} setCurrentChatIDFunction={setCurrentChatID} currentChatID={currentChatID} setAllStoredChatsFunction={setAllCreatedChats} currentChatLogState={chatLog} chatSelectedFlag={chatSelectedFlag} setChatSelectedFlagFunction={setChatSelectedFlag} allStoredChatsState={allCreatedChats}/>
+                                <StoredChat key={String(index)+storedChat.conversation_id} index = {index+1} frontEndToken = {storedChat.conversation_id} setChatLogFunction={setChatLog} setCurrentChatIDFunction={setCurrentChatID} currentChatID={currentChatID} setAllStoredChatsFunction={setAllCreatedChats} currentChatLogState={chatLog} chatSelectedFlag={chatSelectedFlag} setChatSelectedFlagFunction={setChatSelectedFlag} allStoredChatsState={allCreatedChats}/>
                             ))}
 
                     </div>

@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 
 from pymongo import AsyncMongoClient
 from pymongo.asynchronous.database import AsyncDatabase
-
+from pymongo.asynchronous.collection import AsyncCollection
 import pytest
 import uuid
 
@@ -49,7 +49,7 @@ async def test_user_chats_retrieval():
 
         assert response_1.status_code == 200
         assert  len(response_1.json()) == 2 #assuming there are 2 stored chats for the test user in the database
-        assert response_1.status_code == 200
+        assert response_2.status_code == 200
         assert  len(response_2.json()) == 1 #assuming there is 1 stored chat for the test user in the database
 
 @pytest.mark.asyncio
@@ -66,6 +66,22 @@ async def test_get_specific_stored_chat():
         assert  len(response.json()) == 2 #assuming there are 2 messages in the stored chat for the test conversation id
 
 
+
+@pytest.mark.asyncio
+async def test_create_new_chat():
+    '''
+        test successful creation of new chat
+    '''
+    with TestClient(app=app) as client:
+        test_email = "test1@gmail.com"
+        response = client.post(url=f"/create_new_chat/{test_email}")
+        assert response.status_code == 201
+
+
+
+
+
+
 @pytest.mark.asyncio
 async def test_stream_chatbot_response():
     '''
@@ -75,7 +91,7 @@ async def test_stream_chatbot_response():
 
     with TestClient(app=app) as client:
 
-        user_query = "I need a simple workout program"
+        user_query = "what is shoulder adduction?"
 
         #example chats - mimicks the structure of chats extracted from the database
         test_chat_history = [
