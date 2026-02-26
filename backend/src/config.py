@@ -32,4 +32,8 @@ EMBEDDING_MODEL_NAME = "text-embedding-3-large"
 
 LLM_VERSION = "gpt-4o-mini"
 
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+JWT_ALGORITHM = "HS256"
 

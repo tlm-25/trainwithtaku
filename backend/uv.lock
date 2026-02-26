@@ -262,6 +262,7 @@ dependencies = [
     { name = "cryptography" },
     { name = "dataclasses-json" },
     { name = "distro" },
+    { name = "dnspython" },
     { name = "doc2txt" },
     { name = "durationpy" },
     { name = "email-validator" },
@@ -291,6 +292,7 @@ dependencies = [
     { name = "importlib-resources" },
     { name = "iniconfig" },
     { name = "jiter" },
+    { name = "jose" },
     { name = "jsonpatch" },
     { name = "jsonpointer" },
     { name = "jsonschema" },
@@ -350,6 +352,7 @@ dependencies = [
     { name = "pytest-asyncio" },
     { name = "python-dateutil" },
     { name = "python-dotenv" },
+    { name = "python-multipart" },
     { name = "pywin32", marker = "sys_platform == 'win32'" },
     { name = "pyyaml" },
     { name = "qdrant-client" },
@@ -416,6 +419,7 @@ requires-dist = [
     { name = "cryptography", specifier = "==46.0.3" },
     { name = "dataclasses-json", specifier = "==0.6.7" },
     { name = "distro", specifier = "==1.9.0" },
+    { name = "dnspython", specifier = ">=2.8.0" },
     { name = "doc2txt", specifier = "==1.0.8" },
     { name = "durationpy", specifier = "==0.10" },
     { name = "email-validator", specifier = ">=2.3.0" },
@@ -445,6 +449,7 @@ requires-dist = [
     { name = "importlib-resources", specifier = "==6.5.2" },
     { name = "iniconfig", specifier = "==2.1.0" },
     { name = "jiter", specifier = "==0.11.0" },
+    { name = "jose", specifier = ">=1.0.0" },
     { name = "jsonpatch", specifier = "==1.33" },
     { name = "jsonpointer", specifier = "==3.0.0" },
     { name = "jsonschema", specifier = "==4.25.1" },
@@ -504,6 +509,7 @@ requires-dist = [
     { name = "pytest-asyncio", specifier = "==1.2.0" },
     { name = "python-dateutil", specifier = "==2.9.0.post0" },
     { name = "python-dotenv", specifier = "==1.1.1" },
+    { name = "python-multipart", specifier = ">=0.0.22" },
     { name = "pywin32", marker = "sys_platform == 'win32'", specifier = "==311" },
     { name = "pyyaml", specifier = "==6.0.3" },
     { name = "qdrant-client", specifier = "==1.15.1" },
@@ -1542,6 +1548,12 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/e7/ab/eb06ca556b2551d41de7d03bf2ee24285fa3d0c58c5f8d95c64c9c3281b1/jiter-0.11.0-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:fb4790497369d134a07fc763cc88888c46f734abdd66f9fdf7865038bf3a8f40", size = 313405, upload-time = "2025-09-15T09:20:18.918Z" },
     { url = "https://files.pythonhosted.org/packages/af/22/7ab7b4ec3a1c1f03aef376af11d23b05abcca3fb31fbca1e7557053b1ba2/jiter-0.11.0-cp314-cp314t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6e2bbf24f16ba5ad4441a9845e40e4ea0cb9eed00e76ba94050664ef53ef4406", size = 347102, upload-time = "2025-09-15T09:20:20.16Z" },
 ]
+
+[[package]]
+name = "jose"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/01/3d/832caa69cd0d3be2d608d8290be2221072669aa88e87690837f6b31c480f/jose-1.0.0.tar.gz", hash = "sha256:8436c3617cd94e1ba97828fbb1ce27c129f66c78fb855b4bb47e122b5f345fba", size = 9153, upload-time = "2015-11-13T10:52:21.506Z" }
 
 [[package]]
 name = "jsonpatch"
@@ -2815,6 +2827,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f6/b0/4bc07ccd3572a2f9df7e6782f52b0c6c90dcbb803ac4a167702d7d0dfe1e/python_dotenv-1.1.1.tar.gz", hash = "sha256:a8a6399716257f45be6a007360200409fce5cda2661e3dec71d23dc15f6189ab", size = 41978, upload-time = "2025-06-24T04:21:07.341Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5f/ed/539768cf28c661b5b068d66d96a2f155c4971a5d55684a514c1a0e0dec2f/python_dotenv-1.1.1-py3-none-any.whl", hash = "sha256:31f23644fe2602f88ff55e1f5c79ba497e01224ee7737937930c448e4d0e24dc", size = 20556, upload-time = "2025-06-24T04:21:06.073Z" },
+]
+
+[[package]]
+name = "python-multipart"
+version = "0.0.22"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/94/01/979e98d542a70714b0cb2b6728ed0b7c46792b695e3eaec3e20711271ca3/python_multipart-0.0.22.tar.gz", hash = "sha256:7340bef99a7e0032613f56dc36027b959fd3b30a787ed62d310e951f7c3a3a58", size = 37612, upload-time = "2026-01-25T10:15:56.219Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1b/d0/397f9626e711ff749a95d96b7af99b9c566a9bb5129b8e4c10fc4d100304/python_multipart-0.0.22-py3-none-any.whl", hash = "sha256:2b2cd894c83d21bf49d702499531c7bafd057d730c201782048f7945d82de155", size = 24579, upload-time = "2026-01-25T10:15:54.811Z" },
 ]
 
 [[package]]

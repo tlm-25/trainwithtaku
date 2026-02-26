@@ -1,7 +1,8 @@
 
+
 export async function getAllStoredChats(setAllCreatedChatsFunction){
  try {
-    const response = await fetch("/get_stored_chats", {
+    const response = await fetch("/get_stored_user_chats", {
       method: "POST"
     });
 

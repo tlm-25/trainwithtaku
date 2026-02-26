@@ -1,6 +1,8 @@
 import {useState} from 'react'
-
 import { Link } from 'react-router-dom'
+import Modal from './Modal'
+import Authentication from './UserAuth'
+import { useAuth } from '../context/AuthContext'
 function Navigation(props){
         //children refers to everything inside the opening and closing tags of layout in app.jsx
         //children components rendered in between curly brackets 
@@ -20,9 +22,20 @@ function Navigation(props){
             setShowSmallScreenNavOptions(!showSmallScreenNavOptions)
     
         }
+
+        function handleCloseModal(){
+            setShowModal(false)
+        }
+
+        const{globalUser} = useAuth()
     
 
             return (<>
+
+                        <Modal showModal={showModal} handleCloseModal={handleCloseModal}>
+                            <Authentication  handleCloseModal ={handleCloseModal}/>
+                        </Modal>
+                
                         
                 
             
@@ -52,6 +65,14 @@ function Navigation(props){
                                     <li><Link to="/monyai" className="nav-link"> MonyAI</Link></li>
                                     <li><Link to="#" className="nav-link"> Stats</Link></li>
                                     <div></div>
+                                    
+                                    {globalUser ? (
+                                
+                                    <li onClick={logout}><a href="#" className='nav=link'>Logout 👋</a></li>):(
+
+                                
+                                
+                                    <li onClick={()=>{setShowModal(true)}}><a href="#" className='nav-link'>Sign Up / Sign In 👤</a></li>)}                                
                                 </ul>
                                 
 

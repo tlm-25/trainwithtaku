@@ -102,4 +102,26 @@ class Conversation(BaseModel):
     
 class UserEmail(BaseModel):
     email:str
-    
+
+class Token(BaseModel):
+    access_token:str
+    token_type:str
+
+class TokenData(BaseModel):
+    email: Optional[str] = None
+
+
+class User(BaseModel):
+    email:str
+    user_type:str
+    disabled: bool | None = None
+
+
+
+class UserInDB(User):
+    '''
+    Output schema when retrieving user info (excludes hashed password)
+    '''
+    password:str
+
+

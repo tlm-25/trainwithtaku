@@ -67,9 +67,21 @@ async def test_create_new_chat():
         test successful creation of new chat
     '''
     with TestClient(app=app) as client:
-        test_email = "test1@gmail.com"
-        response = client.post(url=f"/create_new_chat/{test_email}")
-        assert response.status_code == 201
+        test_email = "existing_email@gmail.com"
+        password = "Codeword1!!"
+        # First, login to get a valid access token
+        login_response = client.post(url="/login_with_access_token",data={"username":test_email,"password":password})
+        login_response_json = login_response.json()
+
+        # Use the access token to get current user info
+        headers = {"Authorization": f"Bearer {login_response_json['access_token']}"}
+
+
+        create_new_chat_response = client.post(url=f"/create_new_chat",headers=headers)
+        create_new_chat_response_json = create_new_chat_response.json()
+        print(create_new_chat_response_json)
+        assert create_new_chat_response.status_code == 201
+        assert "conversation_id" in create_new_chat_response_json
 
 
 

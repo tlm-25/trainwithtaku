@@ -2,7 +2,7 @@ import {useState, useEffect, useRef} from 'react'
 import '../../index.css'
 import StoredChat from './StoredChat';
 import { getAllStoredChats } from '../../utils';
-
+import { useAuth } from '../../context/AuthContext';
 function ChatWindow() {
 
     const [userInput, setUserInput] = useState('');
@@ -39,7 +39,7 @@ function ChatWindow() {
     //tracking if user has pressed the cancel button
     const cancelledRef = useRef(null)
 
-
+    const {globalUser,logout} = useAuth()
     // Load chat history for current selected chat
     useEffect(() => {
 
@@ -116,12 +116,20 @@ function ChatWindow() {
     }
 
     async function createNewChat(event) {
+
+        //if user not logged in, block creating a new chat
+        if(!globalUser.token) return;
+
         event.preventDefault();
         setCreatingChat(true)
 
         //add the new chat to the database
         const response = await fetch("http://localhost:8000/create_new_chat",{
-            method: "POST"
+            method: "POST",
+            headers:{
+                "Authorization": `Bearer ${globalUser.token}`,
+                "Content-Type":"application/json"
+            }
 
         })
 

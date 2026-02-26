@@ -89,62 +89,71 @@ async def test_email_already_exists_sign_up():
         assert "already in use" in response.json()["message"].lower()
         
 
+
 @pytest.mark.asyncio
-async def test_succesful_login():
+async def test_successful_login_with_access_token():
     '''
-    Test successful login scenario
+    Test that a JWT token is generated on successful login and that the token has the correct structure
     '''
-
     with TestClient(app=app) as client:
         existing_email = "existing_email@gmail.com"
         password = "Codeword1!!"
-        test_user_details = UserLoginForm(email=existing_email,password=password)
-        test_user_details_mock_json = test_user_details.model_dump()
-        response =  client.post(url="/authenticate_user",json=test_user_details_mock_json)
-        assert "success" in response.json()["message"].lower()
+
+        response = client.post(url="/login_with_access_token",data={"username":existing_email,"password":password})
+        response_json =response.json()
         assert response.status_code == 200
+        assert "access_token" in response_json
+        assert "token_type" in response_json
 
 
-@pytest.mark.asyncio 
-async def test_incorrect_password():
+@pytest.mark.asyncio
+async def test_login_incorrect_email():
     '''
-    Test incorrect password scenario
-    '''
+    Test edge case of incorrect email (username)
+    ''' 
+    with TestClient(app=app) as client:
+        # incorrect email for login - does not exist in the test database
+        existing_email = "exist_email@gmail.com"
+        password = "Codeword1!!"
+        response = client.post(url="/login_with_access_token",data={"username":existing_email,"password":password})
+        response_json =response.json()
+        assert response.status_code == 401
+        assert "incorrect" in response_json["message"].lower()
 
+@pytest.mark.asyncio
+async def test_login_incorrect_password():
+    '''
+    Test edge case of incorrect password in login
+
+    ''' 
+    with TestClient(app=app) as client:
+
+        existing_email = "existing_email@gmail.com"
+        #incorrect password for the user in the test database
+        password = "Codword1!"
+        response = client.post(url="/login_with_access_token",data={"username":existing_email,"password":password})
+        response_json =response.json()
+        assert response.status_code == 401
+        assert "incorrect" in response_json["message"].lower()
+
+@pytest.mark.asyncio
+async def test_get_current_user():
+    '''
+    Test that the current user is correctly retrieved from the database
+    '''
     with TestClient(app=app) as client:
         existing_email = "existing_email@gmail.com"
-        #incorrect password for the email
-        password = "Codeword1!"
-        test_user_details = UserLoginForm(email=existing_email,password=password)
-        test_user_details_mock_json = test_user_details.model_dump()
-        response =  client.post(url="/authenticate_user",json=test_user_details_mock_json)
-        assert "incorrect" in response.json()["message"].lower()
-        assert response.status_code == 401
-        
-@pytest.mark.asyncio 
-async def test_incorrect_email():
-    '''
-    Test incorrect email scenario
-    '''
-
-    with TestClient(app=app) as client:
-        existing_email = "existin_email@gmail.com"
-        #incorrect password for the email
         password = "Codeword1!!"
-        test_user_details = UserLoginForm(email=existing_email,password=password)
-        test_user_details_mock_json = test_user_details.model_dump()
-        response =  client.post(url="/authenticate_user",json=test_user_details_mock_json)
-        assert "incorrect" in response.json()["message"].lower()
-        assert response.status_code == 401
-        
 
+        # First, login to get a valid access token
+        login_response = client.post(url="/login_with_access_token",data={"username":existing_email,"password":password})
+        login_response_json = login_response.json()
 
-
-
-
-    
-
-
-
-
-
+        # Use the access token to get current user info
+        headers = {"Authorization": f"Bearer {login_response_json['access_token']}"}
+        current_user_response = client.post(url="/get_current_user", headers=headers)
+        current_user_response_json  = current_user_response.json()
+        assert current_user_response.status_code == 200
+        assert "user_email" in current_user_response_json
+        print(current_user_response_json)
+        assert current_user_response_json["user_email"] == existing_email
