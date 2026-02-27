@@ -132,14 +132,14 @@ async def login_with_access_token(database:AsyncDatabase=Depends(create_or_get_d
 
 
 @app.post("/get_stored_user_chats")
-async def get_stored_user_chats(user_email:UserEmail,database:AsyncDatabase=Depends(create_or_get_database)):
+async def get_stored_user_chats(user:dict=Depends(get_current_user),database:AsyncDatabase=Depends(create_or_get_database)):
 
     try:
         '''
         Retrieve all stored conversations for a given user email from the database
 
-        :param email: User's email address
-        :type email: str
+        :param email: Retrieved user info
+        :type email: dict
         :param database: MongoDB database instance
         :type database: pymongo.asynchronous.database.AsyncDatabase
         :return: List of conversations associated with the user
@@ -147,7 +147,8 @@ async def get_stored_user_chats(user_email:UserEmail,database:AsyncDatabase=Depe
         '''
         main_database = database
         conversations_collection = main_database[CHAT_COLLECTION_NAME]
-        stored_chats = await get_all_stored_user_chats(email=user_email.email,conversations_collection=conversations_collection)
+        user_email = user["email"]
+        stored_chats = await get_all_stored_user_chats(email=user_email,conversations_collection=conversations_collection)
         return JSONResponse(content=stored_chats, status_code=200)
     except Exception as e:  
         message =   f"Failed to retrieve stored chats: {e}" 
@@ -162,7 +163,7 @@ async def get_stored_user_chats(user_email:UserEmail,database:AsyncDatabase=Depe
 
 
 @app.post("/get_chat_history/{conversation_id}")
-async def get_chat_history(conversation_id:str,current_user =Depends(get_current_user),database:AsyncDatabase=Depends(create_or_get_database)):
+async def get_chat_history(conversation_id:str,current_user:dict =Depends(get_current_user),database:AsyncDatabase=Depends(create_or_get_database)):
 
     try:
         '''
@@ -201,7 +202,7 @@ async def generate_chatbot_response(chat_request:ChatRequest,database:AsyncDatab
     return response
     
 @app.post("/create_new_chat")
-async def create_new_chat(user:str = Depends(get_current_user),database:AsyncDatabase=Depends(create_or_get_database))->JSONResponse:
+async def create_new_chat(user:dict = Depends(get_current_user),database:AsyncDatabase=Depends(create_or_get_database))->JSONResponse:
         '''
         Create a new converstion
         

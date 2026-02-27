@@ -29,7 +29,7 @@ async def create_or_get_test_database():
 
 app.dependency_overrides[create_or_get_database] = create_or_get_test_database
 
-#TODO
+
 @pytest.mark.asyncio
 async def test_user_chats_retrieval():
     '''
@@ -38,13 +38,21 @@ async def test_user_chats_retrieval():
     '''
 
     with TestClient(app=app) as client:
-        test_user_1 = UserEmail(email="test1@gmail.com")
-        test_user_mock_json_1 = test_user_1.model_dump()       
-        response_1 = client.post(url=f"/get_stored_user_chats",json=test_user_mock_json_1)
+        # First, login to get a valid access token
+        login_response = client.post(url="/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":TEST_USER_PASSWORD})
+        login_response_json = login_response.json()
+          
+        # Use the access token to get current user info
+        headers = {"Authorization": f"Bearer {login_response_json['access_token']}"}  
+        response_1 = client.post(url=f"/get_stored_user_chats",headers=headers)
+        stored_chats = response_1.json()
 
         assert response_1.status_code == 200
-        assert  len(response_1.json()) > 0 #assuming there are multiple stored chats for the test user in the database
-
+        assert  len(stored_chats) > 0 #assuming there are multiple stored chats for the test user in the database
+        #check that the response container expected fields - conversation_id, email, messages (list of messages in the conversation), timestamp
+        assert "conversation_id" in stored_chats[0].keys()  
+        assert "email" in stored_chats[0].keys() 
+        assert "messages" in stored_chats[0].keys() 
 
 @pytest.mark.asyncio
 async def test_get_specific_stored_chat():
