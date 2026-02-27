@@ -2,7 +2,7 @@ from src.database.connection import get_mongo_client, create_or_get_database, cr
 from src.chatbot.chat_history import get_all_stored_user_chats
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from src.chatbot.chat_response import stream_chatbot_response
-from src.config import CHAT_COLLECTION_NAME, TEST_CHAT_COLLECTION_NAME, TEST_DATABASE_NAME, MONGO_DB_CONNECTION_STRING
+from src.config import CHAT_COLLECTION_NAME, TEST_CHAT_COLLECTION_NAME, TEST_DATABASE_NAME, MONGO_DB_CONNECTION_STRING, TEST_USER_EMAIL, TEST_USER_PASSWORD, TEST_CONVERSATION_ID
 from src.schemas import UserEmail, ClientForm,Conversation
 from src.main import app
 
@@ -54,10 +54,19 @@ async def test_get_specific_stored_chat():
     '''
 
     with TestClient(app=app) as client:
-        conversation_id = "3434343-34234243-1231"      
-        response = client.post(url=f"/get_chat_history/{conversation_id}")
+        # Test credentials for existing user in test database
+
+        # First, login to get a valid access token
+        login_response = client.post(url="/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":TEST_USER_PASSWORD})
+        login_response_json = login_response.json()
+
+        # Use the access token to get current user info
+        headers = {"Authorization": f"Bearer {login_response_json['access_token']}"}
+
+        conversation_id = TEST_CONVERSATION_ID      
+        response = client.post(url=f"/get_chat_history/{conversation_id}",headers=headers)
         assert response.status_code == 200
-        assert  len(response.json()) == 2 #assuming there are 2 messages in the stored chat for the test conversation id
+        assert  "hi" in response.json()[0]["message"].lower() # assuming first message is a greeting from the chatbot saying ""Hi, I'm Monyai your fitness assistant!"
 
 
 
@@ -67,8 +76,8 @@ async def test_create_new_chat():
         test successful creation of new chat
     '''
     with TestClient(app=app) as client:
-        test_email = "existing_email@gmail.com"
-        password = "Codeword1!!"
+        test_email = TEST_USER_EMAIL
+        password = TEST_USER_PASSWORD
         # First, login to get a valid access token
         login_response = client.post(url="/login_with_access_token",data={"username":test_email,"password":password})
         login_response_json = login_response.json()

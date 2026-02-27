@@ -4,10 +4,12 @@ from pymongo.asynchronous.collection import AsyncCollection
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 
-async def get_specific_stored_user_chat(conversation_id:str,conversations_collection:AsyncCollection)->dict:
+async def get_specific_stored_user_chat(current_user_email:str,conversation_id:str,conversations_collection:AsyncCollection)->dict:
     '''
         Retrieve a specific stored conversation for a given conversation ID from the database - get the list of messages in the conversation
 
+        :param current_user: The email of the current user
+        :type current_user: str
         :param conversation_id: Unique identifier for the conversation
         :type conversation_id: str
         :param conversations_collection: MongoDB collection storing conversations
@@ -19,7 +21,10 @@ async def get_specific_stored_user_chat(conversation_id:str,conversations_collec
 
     
     # get all the messages stored for a specific conversation for specific user - using cursor to so only a portion of chats loaded at a time - set projection to exclude _id field (avoid errors when sending to endpoint) - JSONREsponse can't serialize ObjectId type
-    chat_info =  await conversations_collection.find_one({"conversation_id":conversation_id},projection={"_id":False})
+    # also requiring the current user's email to ensure only retrieving conversations associated with the user - security measure to prevent unauthorized access to other users' conversations
+    # The current_user will extracted from JWT token in the endpoint (via dependency injection) and passed to this function to ensure only retrieving conversations associated with the authenticated user
+    chat_info =  await conversations_collection.find_one({"conversation_id":conversation_id,"email":current_user_email},projection={"_id":False})
+
     messages = chat_info["messages"]
 
     return messages

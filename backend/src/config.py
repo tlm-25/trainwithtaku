@@ -38,4 +38,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
 
 
+# Test credentials for integration testing
+TEST_USER_EMAIL = os.getenv("TEST_USER_EMAIL")
+TEST_USER_PASSWORD = os.getenv("TEST_USER_PASSWORD")
+TEST_CONVERSATION_ID = os.getenv("TEST_CONVERSATION_ID")
 

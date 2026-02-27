@@ -156,8 +156,13 @@ async def get_stored_user_chats(user_email:UserEmail,database:AsyncDatabase=Depe
 
 
 
+
+
+
+
+
 @app.post("/get_chat_history/{conversation_id}")
-async def get_chat_history(conversation_id:str,database:AsyncDatabase=Depends(create_or_get_database)):
+async def get_chat_history(conversation_id:str,current_user =Depends(get_current_user),database:AsyncDatabase=Depends(create_or_get_database)):
 
     try:
         '''
@@ -172,7 +177,9 @@ async def get_chat_history(conversation_id:str,database:AsyncDatabase=Depends(cr
         '''
         main_database = database
         conversations_collection = main_database[CHAT_COLLECTION_NAME]
-        chat_history = await get_specific_stored_user_chat(conversation_id=conversation_id,conversations_collection=conversations_collection)
+        current_user_email = current_user["email"]
+
+        chat_history = await get_specific_stored_user_chat(current_user_email=current_user_email,conversation_id=conversation_id,conversations_collection=conversations_collection)
         return JSONResponse(content=chat_history, status_code=200)
     except Exception as e:  
         message =   f"Failed to retrieve stored chats: {e}" 
@@ -238,7 +245,7 @@ async def create_new_chat(user:str = Depends(get_current_user),database:AsyncDat
 
 
 @app.post("/get_current_user")
-async def get_current_user(user = Depends(get_current_user),database:AsyncDatabase=Depends(create_or_get_database)):
+async def get_user(user = Depends(get_current_user),database:AsyncDatabase=Depends(create_or_get_database)):
     '''
     Endpoint to verify that we can retrieve the current user from the JWT token
     '''
