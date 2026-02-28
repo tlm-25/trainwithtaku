@@ -245,13 +245,13 @@ async def create_new_chat(user:dict = Depends(get_current_user),database:AsyncDa
             return JSONResponse(content=message,status_code=409)
 
 
-@app.post("/get_current_user")
+@app.get("/me")
 async def get_user(user = Depends(get_current_user),database:AsyncDatabase=Depends(create_or_get_database)):
     '''
     Endpoint to verify that we can retrieve the current user from the JWT token
     '''
     if user is None:
-        return HTTPException(status_code=401,detail="Invalid authentication credentials")
+        raise HTTPException(status_code=401,detail="Invalid authentication credentials")
     
     return JSONResponse(content={"user_email":user["email"]},status_code=200)
 

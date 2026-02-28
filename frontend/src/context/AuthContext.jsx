@@ -1,12 +1,12 @@
 import { useState, useEffect, useContext, createContext } from "react";
 import { login, signUp } from "../userFunctions";
 //initialise context - create context object - allow to share data globally across components without passing props manually
-const authContext = createContext()
+const AuthContext = createContext()
 
 //create custom react hook from which we can destructure any of these values
 //returns context's value - don't need to import useContext and AuthContext everywhere  
 export function useAuth() {
-    return useContext(authContext)
+    return useContext(AuthContext)
 }
 
 
@@ -17,8 +17,6 @@ export function AuthProvider(props){
     //state for user 
     const [globalUser, setGlobalUser] = useState(null);
 
-    //if user is not authenticated we do not have a global state
-    const [globalData, setGlobalData] = useState(null);
 
     const [isLoading,setIsLoading] = useState(false);
 
@@ -50,6 +48,7 @@ export function AuthProvider(props){
 
         const response = await fetch("http://localhost:8000/login_with_access_token", {
         method: "POST",
+        credentials: "include",
         headers: {
             //expected content type for the fastapi endpoint with Oauth form authentication - use URLSearchParams to format body content as form data
             "Content-Type": "application/x-www-form-urlencoded"
@@ -78,15 +77,61 @@ export function AuthProvider(props){
 
     //anything contained here becomes part of the gloabl state - accessible anywhere in application
     //anything in here is shared vis context
-    const value = {globalUser, globalData, setGlobalData, isLoading, signUp,login,logout}
+    const value = {globalUser, isLoading, signUp,login,logout}
     //takes two arguments - first is a callback function (function that runs when the event we are looking or is triggered)
     //second is a dependency array that contains (or doesn't contain) when this logic gets run
     //we leave dependency array empty, want this logic to run when the page loads for the first time
     useEffect(()=>{
+        // check that user has a valid a
+        async function checkAuth() {
+            try {
 
-        //check if user is logged in when the app loads - check if there is a token 
+                const response = await fetch("http://localhost:8000/me",{
+                    method: "GET",
+                    credentials: "include"
+                })
+
+                if(response.ok){
+                    const data = await response.json()
+                    //store the authenticated user in the global state - allow the rest of the app to know that the user has logged in 
+                    setGlobalUser(data)
+                } else {
+                    //if response gives an error- user is not authenticated, clear any exisiting user state
+                    setGlobalUser(null)
+                }
+
+
+            }
+
+            catch (error) {
+                //if something fails (e.g. if the server is down, or there is a network error)
+                //we assume that the user is not authenticated
+                console.error("Auth check failed",error)
+                setGlobalUser(null)
+
+            }
+
+        }
+
+        //invoke the authentication check 
+        checkAuth()
+
+
+
     
     },[])
+
+
+    return (
+
+        //provde value to all components in provider - available to all children
+
+        <AuthContext.Provider value={value}>
+            {children}
+        </AuthContext.Provider>
+
+
+    )
 
 
 
