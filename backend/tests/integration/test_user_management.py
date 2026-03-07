@@ -52,6 +52,21 @@ async def test_successful_user_sign_up():
         assert "success" in response.json()["message"].lower()
 
 @pytest.mark.asyncio
+async def test_password_confirm_pw_mismatch():
+    '''
+        Test scenario when password and confirm password fields are mismatched in user sign up'''
+
+    with TestClient(app=app) as client:
+        email = f"test{str(uuid.uuid4())}@gmail.com"
+        user_type = "trainee"
+        test_user_details = UserSignUpForm(email=email,password=TEST_USER_PASSWORD,confirm_password="Password11!",user_type=user_type)
+        test_user_details_mock_json = test_user_details.model_dump()
+        response =  client.post(url="/add_user",json=test_user_details_mock_json)
+
+        assert response.status_code == 400
+
+
+@pytest.mark.asyncio
 async def test_invalid_email_format_user_sign_up():
     '''
         Testing response to incorrectly formatted email

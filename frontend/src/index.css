@@ -330,6 +330,38 @@ button:focus-visible {
   
 }
 
+.top-of-popup {
+  display: flex;
+  justify-content: space-between;
+}
+.sign-up-popup{
+  gap:1rem;
+  align-items: space-between;
+}
+
+.popup-title-text {
+  padding-top: 0;
+}
+
+
+.auth-popup {
+  transform: translate(-50%,-50%) scale(0);
+  transition: 200ms ease-in-out;
+
+}
+
+
+
+.auth-popup-active {
+  transform: translate(-50%,-50%) scale(1);
+  transition: 200ms ease-in-out;
+
+
+}
+
+
+
+
 
 
 

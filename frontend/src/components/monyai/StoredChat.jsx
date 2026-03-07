@@ -1,13 +1,14 @@
-// import { getAllStoredChats, removeValueFromArray } from "../utils"
+
 import {useState} from 'react'
+import { useAuth } from '../../context/AuthContext';
 
 function StoredChat(props){
 
-    //NOTE - "frontend token" and "chat id" are used somewhat interchagebly here - 
+    // Get chat id for specific user 
 
-    const {frontEndToken,setChatLogFunction,setCurrentChatIDFunction,currentChatID,allStoredChatsState,setAllStoredChatsFunction,currentChatLogState, index, chatSelectedFlag, setChatSelectedFlagFunction, getSpecificChatFunction} = props
+    const {conversationId,setChatLogFunction,setCurrentChatIDFunction,currentChatID,allStoredChatsState,setAllStoredChatsFunction,currentChatLogState, index, chatSelectedFlag, setChatSelectedFlagFunction, getSpecificChatFunction} = props
 
-
+    const {globalUser} = useAuth()
 
 
     function replaceLastNCharacters(string,n){
@@ -28,16 +29,21 @@ function StoredChat(props){
 
 
 
-    async function getSpecificChat (frontEndToken) {
+    async function getSpecificChat (conversationId) {
 
 
 
 
 
-            
+            console.log("convoID",conversationId)
             //get the specific chat from the chat history 
-            const response = await fetch(`http://localhost:8000/get_chat_history/${frontEndToken}`,{
-            method: 'POST'
+            const response = await fetch(`http://localhost:8000/get_chat_history`,{
+            method: 'POST',
+            headers:{
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${globalUser.token}`,
+           },
+            body: JSON.stringify({conversation_id:conversationId})
 
             })
 
@@ -48,7 +54,7 @@ function StoredChat(props){
 
                 setChatLogFunction(data)
                 setChatSelectedFlagFunction(true)
-                setCurrentChatIDFunction(frontEndToken)
+                setCurrentChatIDFunction(conversationId)
                 
 
             }
@@ -67,7 +73,7 @@ function StoredChat(props){
         // const previousChatID = allStoredChatsState[allStoredChatsState.length-2].conversation_id
 
         // //frontend token of the next element in the array
-        const currentChatIndex = allStoredChatsState.findIndex(chat => chat.conversation_id ===frontEndToken )
+        const currentChatIndex = allStoredChatsState.findIndex(chat => chat.conversation_id ===conversationId )
 
         
         
@@ -89,14 +95,14 @@ function StoredChat(props){
 
 
         if (!chatSelectedFlag) {
-            const response = await fetch(`http://localhost:8000/delete_chat/${frontEndToken}`, {
+            const response = await fetch(`http://localhost:8000/delete_chat/${conversationId}`, {
             method: "DELETE",
             });
 
             if (!response.ok) return;
 
             setAllStoredChatsFunction(prev =>
-            prev.filter(chat => chat.conversation_id !== frontEndToken)
+            prev.filter(chat => chat.conversation_id !== conversationId)
             );
 
             if (allStoredChatsState.length === 1) {
@@ -110,7 +116,7 @@ function StoredChat(props){
 
         // //update the allStoredChats array
         // setAllStoredChatsFunction(prev =>
-        // prev.filter(chat => chat.conversation_id !== frontEndToken)
+        // prev.filter(chat => chat.conversation_id !== conversationId)
         // );
 
 
@@ -139,13 +145,13 @@ function StoredChat(props){
                 }
 
 
-                const response = await fetch(`http://localhost:8000/delete_chat/${frontEndToken}`, {
+                const response = await fetch(`http://localhost:8000/delete_chat/${conversationId}`, {
                 method: "DELETE",
                 });
 
 
                 setAllStoredChatsFunction(prev =>
-                 prev.filter(chat => chat.conversation_id !== frontEndToken)
+                 prev.filter(chat => chat.conversation_id !== conversationId)
                 );
 
                
@@ -158,13 +164,13 @@ function StoredChat(props){
             //if we delete the last chat
             else {
 
-                const response = await fetch(`http://localhost:8000/delete_chat/${frontEndToken}`, {
+                const response = await fetch(`http://localhost:8000/delete_chat/${conversationId}`, {
                 method: "DELETE",
                 });
 
 
                 setAllStoredChatsFunction(prev =>
-                 prev.filter(chat => chat.conversation_id !== frontEndToken)
+                 prev.filter(chat => chat.conversation_id !== conversationId)
                 );
 
                 //set the chatSelected state false to indicate that no chat is selected
@@ -191,10 +197,10 @@ function StoredChat(props){
     return (
         <>
             
-            <button className={`chat-preview-block  ${currentChatID===frontEndToken ? "chat-selected":""}`} onClick={()=>{getSpecificChat(frontEndToken)}}>
-                <p> Chat: {frontEndToken ? index:"New chat..."}</p>
+            <button className={`chat-preview-block  ${currentChatID===conversationId ? "chat-selected":""}`} onClick={()=>{getSpecificChat(conversationId)}}>
+                <p> Chat: {conversationId ? index:"New chat..."}</p>
 
-                    <p onClick={deleteChat} className={`delete-chat-button`}><i class="fa-solid fa-trash-can"></i></p>
+                    <p onClick={deleteChat} className={`delete-chat-button`}><i className="fa-solid fa-trash-can"></i></p>
 
             </button>
 

@@ -53,7 +53,7 @@ function ChatWindow() {
 
 
 
-         getAllStoredChats(setAllCreatedChats);
+         getAllStoredChats(setAllCreatedChats,globalUser.token);
         
 
     },[])
@@ -93,14 +93,15 @@ function ChatWindow() {
         event.preventDefault();
         try{
             const response = await fetch(`http://localhost:8000/clear_chat/${currentChatID}`, {
-                method: 'POST'
+                method: 'POST',
+
             });
 
             if(response.ok){
                 console.log(currentChatID)
                 console.log(response)
                 setChatLog([])
-                await getAllStoredChats(setAllCreatedChats)
+                await getAllStoredChats(setAllCreatedChats,globalUser.token)
                 
             }
             
@@ -136,7 +137,7 @@ function ChatWindow() {
         //get the data about the chat and convert to json
         const data = await response.json()
         //get the updated list of chats
-        await getAllStoredChats(setAllCreatedChats)
+        await getAllStoredChats(setAllCreatedChats,globalUser.token)
 
         setCreatingChat(false)
 
@@ -191,7 +192,7 @@ function ChatWindow() {
         }
     
 
-    async function streamChatbotAnswer(frontendEndToken){
+    async function streamChatbotAnswer(conversationId){
 
                 //get the timestamp for when the message was sent
         const now = new Date().toISOString()
@@ -224,9 +225,9 @@ function ChatWindow() {
 
         try {
             // The API call to our FastAPI backend
-            const response = await fetch(`http://localhost:8000/monyai/chat/${frontendEndToken}`, {
+            const response = await fetch(`http://localhost:8000/chat`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', "Authorization":`Bearer ${globalUser.token}` },
                 body: JSON.stringify({ type: 'user', message: userInput,timestamp:String(now) }),
                 signal: signal
             });
@@ -360,8 +361,10 @@ function ChatWindow() {
             const newChatID = await createNewChat(event)
 
             //get the specific chat from the chat history 
-            const response = await fetch(`http://localhost:8000/monyai/get_chat_history/${newChatID}`,{
-            method: 'POST'
+            const response = await fetch(`http://localhost:8000/get_chat_history`,{
+            method: 'POST',
+            body: JSON.stringify({conversation_id:newChatID}),
+            headers: `Bearer ${globalUser.token}`
 
             })
 
@@ -412,7 +415,7 @@ function ChatWindow() {
                         
                         {allCreatedChats.map((storedChat,index)=>(
 
-                                <StoredChat key={String(index)+storedChat.conversation_id} index = {index+1} frontEndToken = {storedChat.conversation_id} setChatLogFunction={setChatLog} setCurrentChatIDFunction={setCurrentChatID} currentChatID={currentChatID} setAllStoredChatsFunction={setAllCreatedChats} currentChatLogState={chatLog} chatSelectedFlag={chatSelectedFlag} setChatSelectedFlagFunction={setChatSelectedFlag} allStoredChatsState={allCreatedChats}/>
+                                <StoredChat key={String(index)+storedChat.conversation_id} index = {index+1} conversationId = {storedChat.conversation_id} setChatLogFunction={setChatLog} setCurrentChatIDFunction={setCurrentChatID} currentChatID={currentChatID} setAllStoredChatsFunction={setAllCreatedChats} currentChatLogState={chatLog} chatSelectedFlag={chatSelectedFlag} setChatSelectedFlagFunction={setChatSelectedFlag} allStoredChatsState={allCreatedChats}/>
                             ))}
 
                     </div>

@@ -27,7 +27,7 @@ function Navigation(props){
             setShowModal(false)
         }
 
-        const{globalUser} = useAuth()
+        const{globalUser,logout} = useAuth()
     
 
             return (<>
@@ -62,7 +62,7 @@ function Navigation(props){
                                     <li><Link to="#" className="nav-link">Shop</Link></li>
                                     <li><Link to="#" className="nav-link">Blog</Link></li>
                                     <li><Link to="#" className="nav-link">Contact</Link></li>
-                                    <li><Link to="/monyai" className="nav-link"> MonyAI</Link></li>
+                                    {globalUser&&<li><Link to="/monyai" className="nav-link"> MonyAI</Link></li>}
                                     <li><Link to="#" className="nav-link"> Stats</Link></li>
                                     <div></div>
                                     

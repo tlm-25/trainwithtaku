@@ -1,9 +1,17 @@
+import { useAuth } from "./context/AuthContext";
+
+export async function getAllStoredChats(setAllCreatedChatsFunction,token){
 
 
-export async function getAllStoredChats(setAllCreatedChatsFunction){
- try {
-    const response = await fetch("/get_stored_user_chats", {
-      method: "POST"
+
+
+  try {
+    const response = await fetch("http://127.0.0.1:8000/get_stored_user_chats", {
+      method: "POST",
+                  headers:{
+                "Authorization": `Bearer ${token}`,
+                "Content-Type":"application/json"
+            }
     });
 
     if (!response.ok) throw new Error("Failed to fetch chats");
@@ -15,7 +23,11 @@ export async function getAllStoredChats(setAllCreatedChatsFunction){
     console.error("Error fetching chats:", err);
   }
 
-    }
+  }
+
+ 
+
+    
 
 
 export  function removeValueFromArray(array,valueToRemove){

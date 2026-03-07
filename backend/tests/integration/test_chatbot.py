@@ -70,9 +70,8 @@ async def test_get_specific_stored_chat():
 
         # Use the access token to get current user info
         headers = {"Authorization": f"Bearer {login_response_json['access_token']}"}
-
-        conversation_id = TEST_CONVERSATION_ID      
-        response = client.post(url=f"/get_chat_history/{conversation_id}",headers=headers)
+    
+        response = client.post(url=f"/get_chat_history",headers=headers,json={"conversation_id":TEST_CONVERSATION_ID})
         assert response.status_code == 200
         assert  "hi" in response.json()[0]["message"].lower() # assuming first message is a greeting from the chatbot saying ""Hi, I'm Monyai your fitness assistant!"
 

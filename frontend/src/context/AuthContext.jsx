@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext, createContext } from "react";
-import { login, signUp } from "../userFunctions";
+
 //initialise context - create context object - allow to share data globally across components without passing props manually
 const AuthContext = createContext()
 
@@ -38,15 +38,24 @@ export function AuthProvider(props){
             })
 
             const data = await response.json()
+            
+            if(response.ok){
+                return data
 
-            return data.message
+            }
+            
+            else {
+                console.error(data.message)
+            }
+
+            
     }
 
 
     // authenticate a user trying to log in
     async function  login(email,password) {
 
-        const response = await fetch("http://localhost:8000/login_with_access_token", {
+        const response = await fetch("http://127.0.0.1:8000/login_with_access_token", {
         method: "POST",
         credentials: "include",
         headers: {
@@ -86,13 +95,14 @@ export function AuthProvider(props){
         async function checkAuth() {
             try {
 
-                const response = await fetch("http://localhost:8000/me",{
+                const response = await fetch("http://127.0.0.1:8000/me",{
                     method: "GET",
                     credentials: "include"
                 })
 
                 if(response.ok){
                     const data = await response.json()
+                    console.log(data)
                     //store the authenticated user in the global state - allow the rest of the app to know that the user has logged in 
                     setGlobalUser(data)
                 } else {

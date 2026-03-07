@@ -6,21 +6,22 @@ from src.database.user_management.utils import check_if_email_already_in_use
 from src.chatbot.chat_history import get_all_stored_user_chats, get_specific_stored_user_chat
 from src.chatbot.chat_response import stream_chatbot_response
 from src.config import USER_ACCOUNTS_COLLECTION_NAME, CHAT_COLLECTION_NAME, TEST_CHAT_COLLECTION_NAME,VECTOR_STORE_COLLECTION_NAME, ACCESS_TOKEN_EXPIRE_MINUTES
-from src.schemas import UserSignUpForm, UserLoginForm, UserEmail,ClientForm, ChatRequest, Conversation
+from src.schemas import UserSignUpForm, UserLoginForm, UserEmail,ClientForm, ChatRequest, Conversation, ChatHistoryRequest
 from src.database.user_management.jwt_token import create_access_token, get_user_by_email, get_current_user
 import bcrypt
-
+from pydantic import ValidationError
 #mongo db
 from pymongo import AsyncMongoClient
 from pymongo.asynchronous.database import AsyncDatabase
 from pymongo.asynchronous.collection import AsyncCollection
 
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse, Response, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from jwt.exceptions import InvalidTokenError
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 #Context management
 from contextlib import asynccontextmanager
@@ -31,6 +32,15 @@ from datetime import datetime
 
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 
@@ -69,11 +79,15 @@ async def add_user(user_sign_up_form:UserSignUpForm,database:AsyncDatabase=Depen
         if "already in use" in form_submit_message.lower():
             #  409 error code (request conflict, with current state of resource)
             error_code = 409
+        
+        #if confirm password and password fields do not match
+        if "do not match" in form_submit_message.lower():
+            error_code = 400
         else:
             # 422 error code (unprocessable entity) - inputs not in correct format
             error_code = 422
 
-            
+        logging.info(f"Failed to sign up: {form_submit_message}")
         return JSONResponse(content={"message":f"Failed to sign up: {form_submit_message}"},status_code=error_code)
 
 
@@ -162,25 +176,28 @@ async def get_stored_user_chats(user:dict=Depends(get_current_user),database:Asy
 
 
 
-@app.post("/get_chat_history/{conversation_id}")
-async def get_chat_history(conversation_id:str,current_user:dict =Depends(get_current_user),database:AsyncDatabase=Depends(create_or_get_database)):
+@app.post("/get_chat_history")
+async def get_chat_history(chat_request:ChatHistoryRequest,current_user:dict =Depends(get_current_user),database:AsyncDatabase=Depends(create_or_get_database)):
+    '''
+        Retrieve stored conversation for a given user and conversation ID.
 
-    try:
-        '''
-        Retrieve all stored conversations for a given user email from the database
-
-        :param email: User's email address
-        :type email: str
+        :param request: Request body containing the conversation_id
+        :type request: ChatHistoryRequest
+        :param current_user: Authenticated user dict
+        :type current_user: dict
         :param database: MongoDB database instance
-        :type database: pymongo.asynchronous.database.AsyncDatabase
-        :return: List of conversations associated with the user
-        :rtype: list[dict]
+        :type database: AsyncDatabase
+        :return: Chat history for the conversation
+        :rtype: JSONResponse
         '''
+    
+    try:
+        
         main_database = database
         conversations_collection = main_database[CHAT_COLLECTION_NAME]
         current_user_email = current_user["email"]
 
-        chat_history = await get_specific_stored_user_chat(current_user_email=current_user_email,conversation_id=conversation_id,conversations_collection=conversations_collection)
+        chat_history = await get_specific_stored_user_chat(current_user_email=current_user_email,conversation_id=chat_request.conversation_id,conversations_collection=conversations_collection)
         return JSONResponse(content=chat_history, status_code=200)
     except Exception as e:  
         message =   f"Failed to retrieve stored chats: {e}" 
@@ -194,12 +211,15 @@ async def generate_chatbot_response(chat_request:ChatRequest,database:AsyncDatab
     :type chat_request ChatRequest 
      
     '''
+
     main_database = database
     vector_store_collection = main_database[VECTOR_STORE_COLLECTION_NAME]
 
     response = StreamingResponse(stream_chatbot_response(user_query=chat_request.user_query,chat_history=chat_request.chat_history,vector_store_collection=vector_store_collection,client_form=chat_request.client_form))
 
     return response
+
+
     
 @app.post("/create_new_chat")
 async def create_new_chat(user:dict = Depends(get_current_user),database:AsyncDatabase=Depends(create_or_get_database))->JSONResponse:
@@ -256,6 +276,26 @@ async def get_user(user = Depends(get_current_user),database:AsyncDatabase=Depen
     return JSONResponse(content={"user_email":user["email"]},status_code=200)
 
 
+
+
+# logging/printing any missing fields in pydantic validation errors
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+
+    missing_fields = [
+        err["loc"][-1]
+        for err in exc.errors()
+        if err["type"] == "value_error.missing"
+    ]
+    logging.info(missing_fields)
+
+    return JSONResponse(
+        status_code=422,
+        content={
+            "message": "Missing required fields",
+            "missing_fields": missing_fields,
+        },
+    )
         
 
         

@@ -15,7 +15,7 @@ from src.schemas import ClientForm
 
 
 
-def create_training_retrieval_query_from_form_and_user_query(retrieval_query_template:str,client_form:ClientForm|None,user_query:str)->str:
+def create_training_retrieval_query_from_form_and_user_query(retrieval_query_template:str,user_query:str,client_form:ClientForm|None=None,)->str:
     '''
     Create a retrieval query based on the client form data 
 

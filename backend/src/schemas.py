@@ -41,8 +41,12 @@ class ClientForm(BaseModel):
 class ChatRequest(BaseModel):
     user_query:str
     chat_history:list[dict]
-    client_form:ClientForm
+    # client form
+    client_form:ClientForm|None=None
 
+
+class ChatHistoryRequest(BaseModel):
+    conversation_id:str 
 
 
 class ClientNutritionRequirements(BaseModel):
@@ -97,7 +101,7 @@ class ChatMessage(BaseModel):
 
 class Conversation(BaseModel):
     conversation_id:str
-    messages:List[dict]
+    messages:list[ChatMessage]
     email:str
     
 class UserEmail(BaseModel):

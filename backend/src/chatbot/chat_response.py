@@ -50,7 +50,7 @@ CLIENT DATA
 
 
 
-async def stream_chatbot_response(user_query:str,chat_history:list[dict],vector_store_collection:AsyncCollection,client_form:ClientForm):
+async def stream_chatbot_response(user_query:str,chat_history:list[dict],vector_store_collection:AsyncCollection,client_form:ClientForm|None=None):
     '''
     Stream chatbot response based on user query, relevant client form data, and chat history
 
@@ -63,11 +63,14 @@ async def stream_chatbot_response(user_query:str,chat_history:list[dict],vector_
     :return: Streamed chatbot response
     :rtype: AsyncGenerator[str]
     '''
-
+    if client_form is None or not client_form:
+        client_form_text = ""
     
-
-    #get info from client form
-    client_form_dict = client_form.model_dump()
+    else:
+        #get info from client form
+        client_form_dict = client_form.model_dump()
+        client_form_text = "FORM INFO:"+ "\n".join(f"{k}: {v}" for k, v in client_form_dict.items())
+    
 
     #retrieve relevant documents based on use query and client form data
     retrieval_query = create_training_retrieval_query_from_form_and_user_query(retrieval_query_template=TRAINING_RETRIEVAL_QUERY_TEMPLATE,client_form=client_form,user_query=user_query)
@@ -78,7 +81,7 @@ async def stream_chatbot_response(user_query:str,chat_history:list[dict],vector_
 
     string_formatted_documents = format_documents_for_prompt(documents=retrieved_documents)
 
-    client_form_text = "FORM INFO:"+ "\n".join(f"{k}: {v}" for k, v in client_form_dict.items())
+    
 
     chat_prompt = ChatPromptTemplate.from_messages([("system",TRAINING_PROGRAM_PROMPT_CONCISE)])
 

@@ -8,6 +8,8 @@ export default function Authentication (props) {
     const [isRegistration,setIsRegistration] = useState(false)
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
+    const [confirmPassword, setConfirmPassword] = useState("")
+     const [userType, setUserType] = useState("")
     const [isAuthenticating, setIsAuthenticating] = useState(false)
     const [error,setError] = useState(null)
     
@@ -16,7 +18,7 @@ export default function Authentication (props) {
 
     async function handleAuthenticate () {
         //if email empty/invalid, password empty/invalid or less than 6 characters, block it 
-        if(!email || !email.includes("@") || !password ||password.length < 6 || isAuthenticating) {
+        if(!email || !email.includes("@") || !password ||password.length < 8 || isAuthenticating) {
             return }
         
             try{
@@ -28,7 +30,7 @@ export default function Authentication (props) {
                 console.log("registering user")
 
                 //TODO - call the API for the sign up
-                await signUp(email,password)
+                await signUp(email,password,userType,confirmPassword)
 
 
             }
@@ -62,7 +64,12 @@ export default function Authentication (props) {
                 <p>{ isRegistration ? 'Create your account' : 'Sign into your account'}</p>
                 {error && (<p>❌ {(error.includes("invalid-credential") ? "Incorrect username or password. Try again":error)}</p>)}
                 <input value={email} onChange={(e)=>{setEmail(e.target.value)}} placeholder="Email" />
-                <input value={password} onChange={(e)=>{setPassword(e.target.value)}} placeholder="******" type="password" />
+                <input value={password} onChange={(e)=>{setPassword(e.target.value)}} placeholder="Password" type="password" />
+                {isRegistration&&<input value={confirmPassword} onChange={(e)=>{setConfirmPassword(e.target.value)}} placeholder="Confirm Password" type="password" />}
+                {isRegistration&&<select value={userType} onChange={(e) => setUserType(e.target.value)}>
+                    <option value="trainee">Trainee</option>
+                    <option value="trainer">Trainer</option>
+                </select>}
                 <button onClick={handleAuthenticate}><p>{ isAuthenticating ? 'Authenticating...': isRegistration ? 'Sign up' : 'Login'}</p></button>
                 <hr />
             <div className="register-content">
