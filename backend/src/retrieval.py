@@ -28,7 +28,7 @@ def create_training_retrieval_query_from_form_and_user_query(retrieval_query_tem
 
     if not client_form or client_form is None:
         return retrieval_query_template.format(
-            query=user_query,
+            user_query=user_query,
             current_activity_level= "N/A",
             current_occupation = "N/A",
             current_average_steps_per_day = "N/A",

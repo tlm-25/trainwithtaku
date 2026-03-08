@@ -225,12 +225,20 @@ function ChatWindow() {
 
         try {
             // The API call to our FastAPI backend
-            const response = await fetch(`http://localhost:8000/chat`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', "Authorization":`Bearer ${globalUser.token}` },
-                body: JSON.stringify({ type: 'user', message: userInput,timestamp:String(now) }),
-                signal: signal
-            });
+            const response = await fetch("http://localhost:8000/chat", {
+                method: "POST",
+            headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${globalUser.token}`
+            },
+            body: JSON.stringify({
+                user_query: userInput,
+                chat_history: newChatLog,
+                //may update to include client form later
+                client_form: null
+            }),
+            signal: signal
+                });
 
             //get the the query ID of the user input
              const chatInputQueryID = response.headers.get("X-Query-ID")
@@ -364,7 +372,7 @@ function ChatWindow() {
             const response = await fetch(`http://localhost:8000/get_chat_history`,{
             method: 'POST',
             body: JSON.stringify({conversation_id:newChatID}),
-            headers: `Bearer ${globalUser.token}`
+            headers: {"Authorization":`Bearer ${globalUser.token}`}
 
             })
 

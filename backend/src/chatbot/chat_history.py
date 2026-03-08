@@ -3,7 +3,7 @@ from pymongo.asynchronous.collection import AsyncCollection
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-
+from src.schemas import ChatMessage
 async def get_specific_stored_user_chat(current_user_email:str,conversation_id:str,conversations_collection:AsyncCollection)->dict:
     '''
         Retrieve a specific stored conversation for a given conversation ID from the database - get the list of messages in the conversation
@@ -52,16 +52,16 @@ async def get_all_stored_user_chats(email:str,conversations_collection:AsyncColl
     return conversations_list
 
 
-async def convert_chat_history_to_langchain_format(chat_history:list[dict])->list[HumanMessage | AIMessage | SystemMessage]:
+async def convert_chat_history_to_langchain_format(chat_history:list[ChatMessage])->list[HumanMessage | AIMessage | SystemMessage]:
     '''
         Retrieve previous chat history as dict and return list of langchain formatted message objects 
     '''
     langchain_formatted_chat_history = []
     for message in chat_history:
-        if message["type"] == "user":
-            langchain_formatted_chat_history.append(HumanMessage(content=message["message"]))
-        elif message["type"] == "bot":
-            langchain_formatted_chat_history.append(AIMessage(content=message["message"]))
-        elif message["type"] == "system":
-            langchain_formatted_chat_history.append(SystemMessage(content=message["message"]))
+        if message.type == "user":
+            langchain_formatted_chat_history.append(HumanMessage(content=message.message))
+        elif message.type == "bot":
+            langchain_formatted_chat_history.append(AIMessage(content=message.message))
+        elif message.type == "system":
+            langchain_formatted_chat_history.append(SystemMessage(content=message.message))
     return langchain_formatted_chat_history
