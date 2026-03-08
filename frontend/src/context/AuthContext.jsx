@@ -69,12 +69,23 @@ export function AuthProvider(props){
         })
     });
 
-        const data = await response.json()
+        if (response.ok) {
+            //if user enters correct credentials, set the global user state using the access token to give the user access to resources
+            const data = await response.json()
+            setGlobalUser({ email:email, token: data.access_token })
+            return data.message
 
+        }
 
-        setGlobalUser({ email:email, token: data.access_token })
-        return true
+        else {
 
+            //if user enters incorrect credentials, simply return the message (which will indicate that they input invalid credentials)
+            const data = await response.json()
+            return data.message
+
+        }
+
+        
         
     }
 
