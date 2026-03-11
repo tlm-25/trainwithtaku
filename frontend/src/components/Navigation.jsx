@@ -68,7 +68,7 @@ function Navigation(props){
                                     
                                     {globalUser ? (
                                 
-                                    <li onClick={logout}><a href="#" className='nav=link'>Logout 👋</a></li>):(
+                                    <li onClick={logout} className='nav=link'><a href="#" >Logout 👋</a></li>):(
 
                                 
                                 

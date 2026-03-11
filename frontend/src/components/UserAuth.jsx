@@ -40,6 +40,16 @@ export default function Authentication (props) {
         hasSpecialCharacters: hasSpecialCharacters(value),
             });
         };
+    
+    function resetUserAuthFields(){
+        setLoginMessage("")
+        setPassword("")
+        setEmail("")
+        setConfirmPassword("")
+        setUserType("")
+
+
+    }
 
 
     
@@ -54,7 +64,7 @@ export default function Authentication (props) {
             //isAuthenticating is set to try while we are authenticating 
             setIsAuthenticating(true)
             setError(null)
-            setLoginMessage(null)
+            setLoginMessage("")
             if(isRegistration) {
                 //register user
                 console.log("registering user")
@@ -63,6 +73,7 @@ export default function Authentication (props) {
                 const response = await signUp(email,password,userType,confirmPassword)
                 if(response.ok){
                     handleCloseModal()
+                    resetUserAuthFields()
 
                 }
 
@@ -71,16 +82,28 @@ export default function Authentication (props) {
             else{
                 //login user
                 const loginResponse = await login(email,password)
+    
                 
 
-                if(loginResponse.toLowerCase().includes("success")){
+                if(loginResponse.status === 200|| loginResponse.message.toLowerCase().includes("success") ){
+                    console.log(loginResponse)
+                    //reset the inputs and close the modal once the user is logged in
+                     
                     handleCloseModal()
-                    
+                    resetUserAuthFields()
+                               
+
+                }
+
+                else if (loginResponse.status === 401 || loginResponse.message.toLowerCase().includes("incorrect")){
+
+                    setLoginMessage("Incorrect email or password")
+
 
                 }
 
 
-                setLoginMessage(loginResponse)
+                
          
 
             }
@@ -109,8 +132,10 @@ export default function Authentication (props) {
         
             <div className='top-of-popup'> <h2 className="popup-title-text">{ isRegistration ? 'Sign up❚█══█❚' : 'Login❚█══█❚'} </h2><h3><button onClick={handleCloseModal}>&times;</button></h3></div>
                 <p>{ isRegistration ? 'Create your account' : 'Sign into your account'}</p>
-                {loginMessage && (<p>❌ {(loginMessage.toLowerCase().includes("incorrect") ? "Incorrect username or password. Try again":loginMessage)}</p>)}
-                
+                {loginMessage.toLowerCase().includes("incorrect") && (
+                    <p>❌ Incorrect username or password - Please try again</p>
+                )}
+
                 {isRegistration&&<p>Valid email address format: {emailValid ? "✅" : "❌"}</p>}
                 {isRegistration&&<p>Password has lowercase: {passwordValidation.hasLowerCase ? "✅" : "❌"}</p>}
                 {isRegistration&&<p>Password has uppercase: {passwordValidation.hasUpperCase ? "✅" : "❌"}</p>}
@@ -126,7 +151,9 @@ export default function Authentication (props) {
                 <input value={email} onChange={(e)=>{setEmail(e.target.value)}} placeholder="Email" />
                 <input value={password} onChange={handlePasswordChange} placeholder="Password" type="password" />
                 {isRegistration&&<input value={confirmPassword} onChange={(e)=>{setConfirmPassword(e.target.value)}} placeholder="Confirm Password" type="password" />}
-                {isRegistration&&<select value={userType} onChange={(e) => setUserType(e.target.value)}>
+                
+                {isRegistration&&<select value={userType}onChange={(e) => setUserType(e.target.value)} required>
+                    <option value="" disabled>Please select</option>
                     <option value="trainee">Trainee</option>
                     <option value="trainer">Trainer</option>
                 </select>}
