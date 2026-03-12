@@ -42,14 +42,27 @@ export default function Authentication (props) {
         };
     
     function resetUserAuthFields(){
-        setLoginMessage("")
-        setPassword("")
-        setEmail("")
-        setConfirmPassword("")
-        setUserType("")
+        //reset inputs to default inputs
+        const defaultValue = ""
+        setLoginMessage(defaultValue)
+        setPassword(defaultValue)
+        setEmail(defaultValue)
+        setConfirmPassword(defaultValue)
+        setUserType(defaultValue)
+        
+        
+        setPasswordValidation({
+        hasLowerCase: hasLowerCase(defaultValue),
+        hasUpperCase: hasUpperCase(defaultValue),
+        hasNumber: hasNumber(defaultValue),
+        hasSpecialCharacters: hasSpecialCharacters(defaultValue),
+        });
 
 
-    }
+    };
+
+
+    
 
 
     
@@ -115,7 +128,7 @@ export default function Authentication (props) {
 
     }
     //valid email address
-    const emailValid = (email && email.includes("@"))
+    const emailValid = (email && /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(email))
 
     const passwordValid = passwordValidation.hasLowerCase && passwordValidation.hasUpperCase && passwordValidation.hasSpecialCharacters && passwordValidation.hasNumber && (password==confirmPassword)
 
@@ -144,7 +157,7 @@ export default function Authentication (props) {
                 {isRegistration && (
                 confirmPassword
                     ? <p>{password !== confirmPassword ? "❌" : "✅"} Password and Confirm Password Match</p>
-                    : <p>Please retype your password in the Confirm Password field</p>
+                    : <p>Please ensure password and confirm password fields match</p>
                 )}
 
             
