@@ -13,6 +13,7 @@ export default function Authentication (props) {
     const [isAuthenticating, setIsAuthenticating] = useState(false)
     const [error,setError] = useState(null)
     const [loginMessage,setLoginMessage] = useState("")
+    const [signUpMessage,setSignUpMessage] = useState("")
 
     // Track conditions for password
     const [passwordValidation, setPasswordValidation] = useState({
@@ -49,6 +50,7 @@ export default function Authentication (props) {
         setEmail(defaultValue)
         setConfirmPassword(defaultValue)
         setUserType(defaultValue)
+        // setSignUpMessage(defaultValue)
         
         
         setPasswordValidation({
@@ -83,9 +85,18 @@ export default function Authentication (props) {
                 console.log("registering user")
 
                 //TODO - call the API for the sign up
-                const response = await signUp(email,password,userType,confirmPassword)
-                if(response.ok){
+                const signUpResponse = await signUp(email,password,userType,confirmPassword)
+                
+                if(signUpResponse.status === 200){
                     handleCloseModal()
+                    resetUserAuthFields()
+
+                }
+                // if email already in use
+                else if(signUpResponse.status === 409||signUpResponse.message.toLowerCase().includes("already")){
+
+                    setSignUpMessage("This email already has an account associated with it. Please log in. If you have forgotten your password, you can reset it.")
+                    alert(`❌ The email address ${email} is already in use. Please sign in, or create an account with a different email address`)
                     resetUserAuthFields()
 
                 }
@@ -99,7 +110,6 @@ export default function Authentication (props) {
                 
 
                 if(loginResponse.status === 200|| loginResponse.message.toLowerCase().includes("success") ){
-                    console.log(loginResponse)
                     //reset the inputs and close the modal once the user is logged in
                      
                     handleCloseModal()
@@ -148,7 +158,7 @@ export default function Authentication (props) {
                 {loginMessage.toLowerCase().includes("incorrect") && (
                     <p>❌ Incorrect username or password - Please try again</p>
                 )}
-
+                
                 {isRegistration&&<p>Valid email address format: {emailValid ? "✅" : "❌"}</p>}
                 {isRegistration&&<p>Password has lowercase: {passwordValidation.hasLowerCase ? "✅" : "❌"}</p>}
                 {isRegistration&&<p>Password has uppercase: {passwordValidation.hasUpperCase ? "✅" : "❌"}</p>}
@@ -156,9 +166,13 @@ export default function Authentication (props) {
                 {isRegistration&&<p>Password has special characters: {passwordValidation.hasSpecialCharacters ? "✅" : "❌"}</p>}
                 {isRegistration && (
                 confirmPassword
-                    ? <p>{password !== confirmPassword ? "❌" : "✅"} Password and Confirm Password Match</p>
-                    : <p>Please ensure password and confirm password fields match</p>
+                    ? <p> Password and Confirm Password Match{password !== confirmPassword ? "❌" : "✅"}</p>
+                    : <p>Please retype your password to confirm</p>
                 )}
+                {/* {isRegistration&&signUpMessage.toLowerCase().includes("already") && (
+                    
+
+                )} */}
 
             
                 <input value={email} onChange={(e)=>{setEmail(e.target.value)}} placeholder="Email" />
@@ -173,7 +187,7 @@ export default function Authentication (props) {
                 {isAuthenticating ? (
                                     <button onClick={handleAuthenticate}><p>Authenticating...</p></button>
                                     ) : isRegistration ? (
-                                    <button onClick={handleAuthenticate} disabled={isAuthenticating||!emailValid||!passwordValid}><p>Sign up</p></button>
+                                    <button onClick={handleAuthenticate} disabled={isAuthenticating||!emailValid||!passwordValid||!userType}><p>Sign up</p></button>
                                     ) : (
                                          <button onClick={handleAuthenticate} disabled={isAuthenticating}><p>Login</p></button>
                                     )}

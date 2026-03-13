@@ -38,16 +38,16 @@ export function AuthProvider(props){
             })
 
             const data = await response.json()
+            console.log(data)
             
-            if(response.ok){
-                return data
 
-            }
-            
-            else {
-                console.error(data.message)
-            }
+                return {message: data.message,
+                        status: response.status
 
+                }
+
+
+    
             
     }
 
