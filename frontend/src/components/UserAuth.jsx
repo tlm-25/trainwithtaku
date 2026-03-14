@@ -1,10 +1,13 @@
 import {useState} from 'react'
 import { useAuth } from '../context/AuthContext'
 import '../fanta.css'
-
+import {toast} from 'react-hot-toast'
+import {EyeInvisibleOutlined,EyeOutlined} from "@ant-design/icons"
 
 export default function Authentication (props) {
+    // props which represent a function that will open/close the pop up
     const {handleCloseModal,className} = props
+    // state that checks if user is signing up (i.e. the specifically 'sign up' form)
     const [isRegistration,setIsRegistration] = useState(false)
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
@@ -14,6 +17,9 @@ export default function Authentication (props) {
     const [error,setError] = useState(null)
     const [loginMessage,setLoginMessage] = useState("")
     const [signUpMessage,setSignUpMessage] = useState("")
+    // state that checks if we want to show the password or not
+    const [showPassword, setShowPassword] = useState(false)
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
     // Track conditions for password
     const [passwordValidation, setPasswordValidation] = useState({
@@ -21,11 +27,13 @@ export default function Authentication (props) {
         hasUpperCase: false,
         hasNumber: false,
         hasSpecialCharacters: false,
+        hasEightCharacters: false
     });
     //Password check 
     const hasLowerCase = (str) => /[a-z]/.test(str);
     const hasUpperCase = (str) => /[A-Z]/.test(str);
     const hasNumber = (str) => /\d/.test(str);
+    const hasEightCharacters = (str) => str.length >= 8
     const hasSpecialCharacters = (str) => /[-+_!@#$%^&*.,?]/.test(str);
 
 
@@ -39,6 +47,7 @@ export default function Authentication (props) {
         hasUpperCase: hasUpperCase(value),
         hasNumber: hasNumber(value),
         hasSpecialCharacters: hasSpecialCharacters(value),
+        hasEightCharacters: hasEightCharacters(value)
             });
         };
     
@@ -50,6 +59,8 @@ export default function Authentication (props) {
         setEmail(defaultValue)
         setConfirmPassword(defaultValue)
         setUserType(defaultValue)
+        setShowPassword(false)
+        setShowConfirmPassword(false)
         // setSignUpMessage(defaultValue)
         
         
@@ -58,6 +69,7 @@ export default function Authentication (props) {
         hasUpperCase: hasUpperCase(defaultValue),
         hasNumber: hasNumber(defaultValue),
         hasSpecialCharacters: hasSpecialCharacters(defaultValue),
+        hasEightCharacters: hasEightCharacters(defaultValue)
         });
 
 
@@ -73,8 +85,8 @@ export default function Authentication (props) {
 
     async function handleAuthenticate () {
         //if email empty/invalid, password empty/invalid or less than 6 characters, block it 
-        if(!email || !email.includes("@") || !password ||password.length < 8 || isAuthenticating) {
-            return }
+        // if(!email || !email.includes("@") || !password ||password.length < 8 || isAuthenticating) {
+        //     return }
         
             //isAuthenticating is set to try while we are authenticating 
             setIsAuthenticating(true)
@@ -89,6 +101,7 @@ export default function Authentication (props) {
                 
                 if(signUpResponse.status === 200){
                     handleCloseModal()
+                    toast.success(`Welcome to the team! Sign in and get one step closer to your goals! 💪🏾`);
                     resetUserAuthFields()
 
                 }
@@ -96,7 +109,8 @@ export default function Authentication (props) {
                 else if(signUpResponse.status === 409||signUpResponse.message.toLowerCase().includes("already")){
 
                     setSignUpMessage("This email already has an account associated with it. Please log in. If you have forgotten your password, you can reset it.")
-                    alert(`❌ The email address ${email} is already in use. Please sign in, or create an account with a different email address`)
+                    toast.error(`An account with ${email} already exists. Please sign in or use another email.`,);
+
                     resetUserAuthFields()
 
                 }
@@ -113,6 +127,7 @@ export default function Authentication (props) {
                     //reset the inputs and close the modal once the user is logged in
                      
                     handleCloseModal()
+                    toast.success(`Welcome back!💪🏾`);
                     resetUserAuthFields()
                                
 
@@ -121,6 +136,7 @@ export default function Authentication (props) {
                 else if (loginResponse.status === 401 || loginResponse.message.toLowerCase().includes("incorrect")){
 
                     setLoginMessage("Incorrect email or password")
+                    toast.error(`Incorrect email or password`);
 
 
                 }
@@ -154,20 +170,41 @@ export default function Authentication (props) {
         <>
         
             <div className='top-of-popup'> <h2 className="popup-title-text">{ isRegistration ? 'Sign up❚█══█❚' : 'Login❚█══█❚'} </h2><h3><button onClick={handleCloseModal}>&times;</button></h3></div>
-                <p>{ isRegistration ? 'Create your account' : 'Sign into your account'}</p>
+                <p className="auth-instruction-text"><strong>{ isRegistration ? 'All requirements must be met (✅)' : 'Sign into your account'}</strong></p>
                 {loginMessage.toLowerCase().includes("incorrect") && (
-                    <p>❌ Incorrect username or password - Please try again</p>
+                    <p className="auth-instruction-text">❌ Incorrect username or password - Please try again</p>
                 )}
                 
-                {isRegistration&&<p>Valid email address format: {emailValid ? "✅" : "❌"}</p>}
-                {isRegistration&&<p>Password has lowercase: {passwordValidation.hasLowerCase ? "✅" : "❌"}</p>}
-                {isRegistration&&<p>Password has uppercase: {passwordValidation.hasUpperCase ? "✅" : "❌"}</p>}
-                {isRegistration&&<p>Password has number: {passwordValidation.hasNumber ? "✅" : "❌"}</p>}
-                {isRegistration&&<p>Password has special characters: {passwordValidation.hasSpecialCharacters ? "✅" : "❌"}</p>}
+                {isRegistration && (
+                    <>
+                        <p className="auth-instruction-text">Email requirements</p>
+                        <p className="sign-up-checklist-item">
+                        Valid email address format: {emailValid ? "✅" : "❌"}
+                        </p>
+
+                        <p className="auth-instruction-text">Password requirements</p>
+                        <p className="sign-up-checklist-item">
+                        Lowercase Letter: {passwordValidation.hasLowerCase ? "✅" : "❌"}
+                        </p>
+                        <p className="sign-up-checklist-item">
+                        Uppercase Letter: {passwordValidation.hasUpperCase ? "✅" : "❌"}
+                        </p>
+                        <p className="sign-up-checklist-item">
+                        Number: {passwordValidation.hasNumber ? "✅" : "❌"}
+                        </p>
+                        <p className="sign-up-checklist-item">
+                        8+ characters: {passwordValidation.hasEightCharacters ? "✅" : "❌"}
+                        </p>
+                        <p className="sign-up-checklist-item">
+                        Special character: {passwordValidation.hasSpecialCharacters ? "✅" : "❌"}
+                        </p>
+                    </>
+                )}
+
                 {isRegistration && (
                 confirmPassword
-                    ? <p> Password and Confirm Password Match{password !== confirmPassword ? "❌" : "✅"}</p>
-                    : <p>Please retype your password to confirm</p>
+                    ? <p className="sign-up-checklist-item"> Password and Confirm Password Match{password !== confirmPassword ? "❌" : "✅"}</p>
+                    : <p className="sign-up-checklist-item">Please retype your password to confirm</p>
                 )}
                 {/* {isRegistration&&signUpMessage.toLowerCase().includes("already") && (
                     
@@ -175,30 +212,47 @@ export default function Authentication (props) {
                 )} */}
 
             
-                <input value={email} onChange={(e)=>{setEmail(e.target.value)}} placeholder="Email" />
-                <input value={password} onChange={handlePasswordChange} placeholder="Password" type="password" />
-                {isRegistration&&<input value={confirmPassword} onChange={(e)=>{setConfirmPassword(e.target.value)}} placeholder="Confirm Password" type="password" />}
+                <input className="user-input" value={email} onChange={(e)=>{setEmail(e.target.value)}} placeholder="Email" />
+                <div className='password-div' >
+                    <input className="user-input" value={password} onChange={handlePasswordChange} placeholder="Password" type={showPassword? "text":"password"} /> 
+                    <span className="password-toggle" onClick={()=>{setShowPassword(!showPassword)}}>{showPassword ? <EyeOutlined/>:<EyeInvisibleOutlined/>}</span>
+                </div>
+
+                {isRegistration&&(
+
+                    <div className='password-div'>
+                        <input className="user-input" value={confirmPassword} onChange={(e)=>{setConfirmPassword(e.target.value)}} placeholder="Confirm Password" type={showConfirmPassword? "text":"password"} />
+                        <span className="password-toggle" onClick={()=>{setShowConfirmPassword(!showConfirmPassword)}}>{showConfirmPassword ? <EyeOutlined/>:<EyeInvisibleOutlined/>}</span>
+                    </div>
+                    
+                    
+                    
+            
+            
+            
+            
+            )}
                 
-                {isRegistration&&<select value={userType}onChange={(e) => setUserType(e.target.value)} required>
-                    <option value="" disabled>Please select</option>
-                    <option value="trainee">Trainee</option>
-                    <option value="trainer">Trainer</option>
+                {isRegistration&&<select className="user-input" value={userType}onChange={(e) => setUserType(e.target.value)} required>
+                    <option className="user-input" value="" disabled>Please select</option>
+                    <option className="user-input" value="trainee">Trainee</option>
+                    <option className="user-input" value="trainer">Trainer</option>
                 </select>}
                 {isAuthenticating ? (
                                     <button onClick={handleAuthenticate}><p>Authenticating...</p></button>
                                     ) : isRegistration ? (
-                                    <button onClick={handleAuthenticate} disabled={isAuthenticating||!emailValid||!passwordValid||!userType}><p>Sign up</p></button>
+                                    <button className="authenticate-button" onClick={handleAuthenticate} disabled={isAuthenticating||!emailValid||!passwordValid||!userType}><p>Sign up</p></button>
                                     ) : (
-                                         <button onClick={handleAuthenticate} disabled={isAuthenticating}><p>Login</p></button>
+                                         <button className="authenticate-button" onClick={handleAuthenticate} disabled={isAuthenticating||password.length<1||!emailValid}><p>Login</p></button>
                                     )}
                 <hr />
             <div className="register-content">
                 <p>{ isRegistration ? 'Already have an account?' : 'Don\'t have an account?' }</p>
                 {isRegistration ? (
-                                     <button onClick={() => setIsRegistration(false)} disabled={isAuthenticating}><p>Login</p></button>
+                                     <button className="authenticate-button" onClick={() => setIsRegistration(false)} disabled={isAuthenticating}><p>Login</p></button>
                                         ) : 
                                         (
-                                        <button onClick={() => setIsRegistration(true)} disabled={isAuthenticating}><p>Sign up</p></button>
+                                        <button className="authenticate-button" onClick={() => setIsRegistration(true)} disabled={isAuthenticating}><p>Sign up</p></button>
                                         )}
                 
 

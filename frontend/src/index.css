@@ -339,9 +339,26 @@ button:focus-visible {
   display: flex;
   justify-content: space-between;
 }
+
+.auth-instruction-text{
+  font-size: 1.2rem;
+  color: #ffffff;
+  font-weight: bold;
+
+  
+}
+
+.user-input {
+  /* font-size: 1.5rem; */
+  height: 2.5rem; /* fix the height */
+}
 .sign-up-popup{
   gap:1rem;
   align-items: space-between;
+}
+
+.sign-up-checklist-item {
+  font-size: 1.2rem;
 }
 
 .popup-title-text {
@@ -355,7 +372,36 @@ button:focus-visible {
 
 }
 
+.authenticate-button {
+  padding: 0.5rem;
+  font-size: 1.3rem;
+}
 
+.password-div{
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.password-toggle {
+
+
+  cursor: pointer;
+  color: #ffffff;
+  font-size: 2.5rem;
+  
+
+}
+
+.password-toggle:hover {
+
+  scale:1.05;
+  transition: 0.2s;
+  cursor: pointer;
+
+  
+  
+}
 
 
 .auth-popup-active {

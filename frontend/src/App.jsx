@@ -3,7 +3,7 @@ import {Route, Routes} from 'react-router-dom'
 import Home from '../pages/Home'
 import MonyAI from '../pages/MonyAI'
 import Profile from '../pages/Profile'
-
+import { Toaster } from 'react-hot-toast'
 
 
 function App() {
@@ -12,6 +12,13 @@ function App() {
   return (
     <>
 
+    <Toaster position="top-right" toastOptions={{
+      duration: 4000,
+      style:{
+        fontSize: '25px'
+
+      }
+    }} />
     <Routes>
       <Route path="/" element={<Home />}/>
       <Route path="/monyai" element={<MonyAI />}/>
