@@ -33,9 +33,6 @@ function StoredChat(props){
 
 
 
-
-
-            console.log("convoID",conversationId)
             //get the specific chat from the chat history 
             const response = await fetch(`http://localhost:8000/get_chat_history`,{
             method: 'POST',
@@ -49,6 +46,7 @@ function StoredChat(props){
 
             if (response.ok){
                 const data = await response.json()
+                console.log(data)
 
 
 

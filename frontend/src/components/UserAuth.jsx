@@ -171,7 +171,7 @@ export default function Authentication (props) {
         
             <div className='top-of-popup'> <h2 className="popup-title-text">{ isRegistration ? 'Sign up❚█══█❚' : 'Login❚█══█❚'} </h2><h3><button onClick={handleCloseModal}>&times;</button></h3></div>
                 <p className="auth-instruction-text"><strong>{ isRegistration ? 'All requirements must be met (✅)' : 'Sign into your account'}</strong></p>
-                {loginMessage.toLowerCase().includes("incorrect") && (
+                {!isRegistration && loginMessage.toLowerCase().includes("incorrect") && (
                     <p className="auth-instruction-text">❌ Incorrect username or password - Please try again</p>
                 )}
                 

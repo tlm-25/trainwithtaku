@@ -100,10 +100,11 @@ class Conversation(BaseModel):
     email:str
 
 class ChatRequest(BaseModel):
-    user_query:str
+    user_message:ChatMessage
     chat_history:list[ChatMessage]
     # client form
     client_form:ClientForm|None=None
+    conversation_id:str
 
     
 class UserEmail(BaseModel):

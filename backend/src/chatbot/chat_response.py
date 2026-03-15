@@ -1,8 +1,8 @@
 from src.retrieval import CustomAsyncMongoDBAtlasRetriever, create_training_retrieval_query_from_form_and_user_query, format_documents_for_prompt
 from src.chatbot.chat_history import convert_chat_history_to_langchain_format
-from src.config import LLM_VERSION, OPENAI_API_KEY, VECTOR_STORE_COLLECTION_NAME, MONGO_VECTOR_INDEX_NAME
+from src.config import LLM_VERSION, OPENAI_API_KEY, VECTOR_STORE_COLLECTION_NAME, MONGO_VECTOR_INDEX_NAME, CHAT_COLLECTION_NAME
 
-from src.schemas import ClientForm
+from src.schemas import ClientForm, ChatMessage
 from src.prompts import TRAINING_PROGRAM_PROMPT_CONCISE, MEAL_PLANNING_PROMPT
 
 from langchain_core.prompts.chat import ChatPromptTemplate, MessagesPlaceholder, HumanMessagePromptTemplate
@@ -13,6 +13,7 @@ from langchain_core.runnables import RunnablePassthrough, RunnableParallel,Runna
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from pymongo.asynchronous.collection import AsyncCollection
 
+from datetime import datetime
 CHAT_MODEL = ChatOpenAI(
     model=LLM_VERSION,
     openai_api_key=OPENAI_API_KEY,
@@ -50,7 +51,7 @@ CLIENT DATA
 
 
 
-async def stream_chatbot_response(user_query:str,chat_history:list[dict],vector_store_collection:AsyncCollection,client_form:ClientForm|None=None):
+async def stream_chatbot_response(user_query:str,chat_history:list[dict],vector_store_collection:AsyncCollection,conversation_collection:AsyncCollection,conversation_id:str,client_form:ClientForm|None=None):
     '''
     Stream chatbot response based on user query, relevant client form data, and chat history
 
@@ -107,8 +108,24 @@ async def stream_chatbot_response(user_query:str,chat_history:list[dict],vector_
 
     response = CHAT_MODEL.astream(messages)
 
+    # store the contents of the message as it is streamed so that we can add it to the database
+    accumulated_text = ""
     async for chunk in response:
         text_chunk = chunk.content
+        accumulated_text+=chunk.content
         yield text_chunk
+    
+
+     # store the chatbot response in the database once generated 
+
+    final_generated_message = ChatMessage(message=accumulated_text,timestamp=str(datetime.now()),type='bot')
+   
+    add_message_to_db = await conversation_collection.update_one(
+            {"conversation_id": conversation_id},
+            {"$push": {"messages": final_generated_message.model_dump()}}
+            )
+
+    #  add_message_to_db = await conversation_container.patch_item(item = cosmos_id, partition_key=conversation_id,patch_operations =[{ "op": "add", "path": "/messages/-", "value": final_generated_message_dict}])
+
 
         

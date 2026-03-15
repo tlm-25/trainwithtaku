@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 from pymongo import AsyncMongoClient
 from pymongo.asynchronous.database import AsyncDatabase
 from pymongo.asynchronous.collection import AsyncCollection
+from datetime import datetime
 import pytest
 import uuid
 
@@ -115,6 +116,8 @@ async def test_stream_chatbot_response():
 
         user_query = "what is shoulder adduction?"
 
+        user_message = {'message':user_query,'timestamp':str(datetime.now()),'type':'user'}
+
         #example chats - mimicks the structure of chats extracted from the database
         test_chat_history = [
         {"type":"bot","message":"Hi, I'm Monyai your fitness assistant! Ask me any fitness or nutrition related questions.",'timestamp': '2026-01-01 11:37:11.409816'}]
@@ -139,13 +142,15 @@ async def test_stream_chatbot_response():
         injuries="None")
 
         print(user_query)
+        dummy_conversation_id  = str(uuid.uuid4())
 
 
         # send a sample
         with client.stream("POST","/chat",json={
-            "user_query": user_query,
+            "user_message": user_message,
             "chat_history": test_chat_history,
-            "client_form": test_client_form.model_dump()
+            "client_form": test_client_form.model_dump(),
+            "conversation_id": dummy_conversation_id
             }) as response:
 
             chunks = list(response.iter_text())

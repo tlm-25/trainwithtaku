@@ -232,10 +232,11 @@ function ChatWindow() {
             "Authorization": `Bearer ${globalUser.token}`
             },
             body: JSON.stringify({
-                user_query: userInput,
+                user_message: userMessage,
                 chat_history: newChatLog,
                 //may update to include client form later
-                client_form: null
+                client_form: null,
+                conversation_id: currentChatID
             }),
             signal: signal
                 });
@@ -365,7 +366,7 @@ function ChatWindow() {
         
         // //if chat not yet selected (i.e.e user just starts typing)
         if(!chatSelectedFlag){
-            //create a new chat id (the frontend token)
+            //create a new chat id 
             const newChatID = await createNewChat(event)
 
             //get the specific chat from the chat history 

@@ -6,7 +6,7 @@ from src.database.user_management.utils import check_if_email_already_in_use
 from src.chatbot.chat_history import get_all_stored_user_chats, get_specific_stored_user_chat
 from src.chatbot.chat_response import stream_chatbot_response
 from src.config import USER_ACCOUNTS_COLLECTION_NAME, CHAT_COLLECTION_NAME, TEST_CHAT_COLLECTION_NAME,VECTOR_STORE_COLLECTION_NAME, ACCESS_TOKEN_EXPIRE_MINUTES
-from src.schemas import UserSignUpForm, UserLoginForm, UserEmail,ClientForm, ChatRequest, Conversation, ChatHistoryRequest
+from src.schemas import UserSignUpForm, UserLoginForm, UserEmail,ClientForm, ChatRequest, Conversation, ChatHistoryRequest, ChatMessage
 from src.database.user_management.jwt_token import create_access_token, get_user_by_email, get_current_user
 import bcrypt
 from pydantic import ValidationError
@@ -214,8 +214,22 @@ async def generate_chatbot_response(chat_request:ChatRequest,database:AsyncDatab
 
     main_database = database
     vector_store_collection = main_database[VECTOR_STORE_COLLECTION_NAME]
+    conversation_collection = main_database[CHAT_COLLECTION_NAME]
 
-    response = StreamingResponse(stream_chatbot_response(user_query=chat_request.user_query,chat_history=chat_request.chat_history,vector_store_collection=vector_store_collection,client_form=chat_request.client_form))
+    user_message = chat_request.user_message
+    user_query = user_message.message
+ 
+
+    # TODO INSERT USER QUERY INTO CONVERSATION
+    add_message_to_db = await conversation_collection.update_one(
+            {"conversation_id": chat_request.conversation_id},
+            {"$push": {"messages": user_message.model_dump()}},
+            upsert=True
+            )
+    print("saved message to db")
+
+
+    response = StreamingResponse(stream_chatbot_response(user_query=user_query,chat_history=chat_request.chat_history,vector_store_collection=vector_store_collection,client_form=chat_request.client_form,conversation_id=chat_request.conversation_id,conversation_collection=conversation_collection))
 
     return response
 

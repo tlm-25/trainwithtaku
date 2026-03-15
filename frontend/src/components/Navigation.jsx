@@ -72,7 +72,7 @@ function Navigation(props){
 
                                 
                                 
-                                    <li onClick={()=>{setShowModal(true)}}><a href="#" className='nav-link'>Sign Up / Sign In 👤</a></li>)}                                
+                                    <li onClick={()=>{setShowModal(true)}}><a href="#" className='nav-link'>Account 👤</a></li>)}                                
                                 </ul>
                                 
 
