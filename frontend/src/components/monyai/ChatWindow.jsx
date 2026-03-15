@@ -92,15 +92,31 @@ function ChatWindow() {
     const clearChatHistory = async (event) => {
         event.preventDefault();
         try{
-            const response = await fetch(`http://localhost:8000/clear_chat/${currentChatID}`, {
+            const response = await fetch(`http://localhost:8000/clear_chat`, {
                 method: 'POST',
+                body: JSON.stringify({
+                    conversation_id: currentChatID
+
+                }),
+                headers: {"Content-Type": "application/json"}
 
             });
 
             if(response.ok){
-                console.log(currentChatID)
-                console.log(response)
-                setChatLog([])
+                // console.log(currentChatID)
+                // console.log(response)
+                // setChatLog([{ type: 'bot', message: userInput,timestamp:String(now)])
+                //get the specific chat from the chat history 
+                const response = await fetch(`http://localhost:8000/get_chat_history`,{
+                method: 'POST',
+                body: JSON.stringify({conversation_id:currentChatID}),
+                headers: {"Authorization":`Bearer ${globalUser.token}`,
+                            "Content-Type":"application/json"}
+
+                })
+                const chatData = await response.json()
+
+                setChatLog([chatData[0]])
                 await getAllStoredChats(setAllCreatedChats,globalUser.token)
                 
             }

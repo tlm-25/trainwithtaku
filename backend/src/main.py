@@ -279,6 +279,33 @@ async def create_new_chat(user:dict = Depends(get_current_user),database:AsyncDa
             return JSONResponse(content=message,status_code=409)
 
 
+
+@app.post("/clear_chat")
+async def clear_chat(chat:ChatHistoryRequest,database:AsyncDatabase=Depends(create_or_get_database)):
+
+    main_database = database
+
+    conversation_collection = main_database[CHAT_COLLECTION_NAME]
+
+    conversation_id = chat.conversation_id
+    #default chatbot message
+    default_message = [ChatMessage(message="Hello! I'm your refund assistant - How can I help?", type="bot",timestamp=str(datetime.now())).model_dump()]
+
+    # clear the chat and replace with default message
+    clear_all_messages_from_convo = await conversation_collection.update_one(
+    {"conversation_id": conversation_id},
+    {"$set": {"messages": default_message}})
+
+          
+    print("Successfully cleared chat")
+    logging.info("Successfully cleared chat")
+
+    return {"message":"successfully cleared chat"}
+
+
+   
+
+
 @app.get("/me")
 async def get_user(user = Depends(get_current_user),database:AsyncDatabase=Depends(create_or_get_database)):
     '''
