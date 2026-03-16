@@ -300,7 +300,26 @@ async def clear_chat(chat:ChatHistoryRequest,database:AsyncDatabase=Depends(crea
     print("Successfully cleared chat")
     logging.info("Successfully cleared chat")
 
-    return {"message":"successfully cleared chat"}
+    return JSONResponse(content={"message":"successfully cleared chat"},status_code=200)
+
+@app.delete("/delete_chat")
+async def delete_chat(chat:ChatHistoryRequest,database:AsyncDatabase=Depends(create_or_get_database)):
+    '''
+        Delete chat from database
+    
+    '''
+    main_database = database
+
+    try:
+
+        conversation_collection = main_database[CHAT_COLLECTION_NAME]
+        conversation_id = chat.conversation_id
+        delete_conversation = await conversation_collection.delete_one({"conversation_id":conversation_id})
+        return JSONResponse(content={"message":"successfully deleted chat"},status_code=200)
+    except Exception as e:
+        JSONResponse(content={"message":"Failed to delete chat"},status_code=500)
+
+    
 
 
    

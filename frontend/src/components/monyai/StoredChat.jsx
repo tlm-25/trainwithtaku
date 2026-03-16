@@ -81,20 +81,25 @@ function StoredChat(props){
         // const firstChatID = allStoredChatsState[0].conversation_id
 
 
-        //if user changes mind about deleting chat and clicks 'no' when they are asked to confirm, delete the chat
+        //if user changes mind about deleting chat and clicks 'no' when they are asked to confirm
         if (!confirmed) return;
 
         //if no chat currently selected, just delete it and don't select a chat
 
         
-
-        
-
-
-
         if (!chatSelectedFlag) {
-            const response = await fetch(`http://localhost:8000/delete_chat/${conversationId}`, {
+            const response = await fetch(`http://localhost:8000/delete_chat`, {
             method: "DELETE",
+            body: JSON.stringify({
+                conversation_id: conversationId
+
+            }),
+
+            headers: {
+                "Authorization": `Bearer ${globalUser.token}`,
+                "Content-Type": "application/json"
+            }
+
             });
 
             if (!response.ok) return;
@@ -143,9 +148,19 @@ function StoredChat(props){
                 }
 
 
-                const response = await fetch(`http://localhost:8000/delete_chat/${conversationId}`, {
-                method: "DELETE",
-                });
+                const response = await fetch(`http://localhost:8000/delete_chat`, {
+                    method: "DELETE",
+                    body: JSON.stringify({
+                    conversation_id: conversationId
+
+                    }),
+
+                    headers: {
+                        "Authorization": `Bearer ${globalUser.token}`,
+                        "Content-Type": "application/json"
+                    }
+
+                    });
 
 
                 setAllStoredChatsFunction(prev =>
@@ -162,8 +177,18 @@ function StoredChat(props){
             //if we delete the last chat
             else {
 
-                const response = await fetch(`http://localhost:8000/delete_chat/${conversationId}`, {
+                const response = await fetch(`http://localhost:8000/delete_chat`, {
                 method: "DELETE",
+                body: JSON.stringify({
+                conversation_id: conversationId
+
+                }),
+
+                headers: {
+                    "Authorization": `Bearer ${globalUser.token}`,
+                    "Content-Type": "application/json"
+                    }
+
                 });
 
 

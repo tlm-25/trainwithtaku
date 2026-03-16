@@ -252,7 +252,7 @@ function ChatWindow() {
                 chat_history: newChatLog,
                 //may update to include client form later
                 client_form: null,
-                conversation_id: currentChatID
+                conversation_id: conversationId
             }),
             signal: signal
                 });
@@ -385,11 +385,14 @@ function ChatWindow() {
             //create a new chat id 
             const newChatID = await createNewChat(event)
 
-            //get the specific chat from the chat history 
+
+            //get the specific chat based on chat ID
             const response = await fetch(`http://localhost:8000/get_chat_history`,{
             method: 'POST',
             body: JSON.stringify({conversation_id:newChatID}),
-            headers: {"Authorization":`Bearer ${globalUser.token}`}
+
+            headers: {"Authorization":`Bearer ${globalUser.token}`,
+                    "Content-Type": "application/json"}
 
             })
 
@@ -397,7 +400,8 @@ function ChatWindow() {
                 const data = await response.json()
                 setChatLog(data)
                 setCurrentChatID(newChatID)
-
+                console.log("generating chat")
+                console.log(newChatID)
                 // send message to newly create chat, stream answer from chatbot
                 await streamChatbotAnswer(newChatID)
                 
