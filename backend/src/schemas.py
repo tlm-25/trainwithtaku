@@ -131,4 +131,5 @@ class UserInDB(User):
     '''
     password:str
 
-
+class RefreshTokenREquest(BaseModel):
+    refresh_token:str

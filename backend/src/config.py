@@ -33,10 +33,10 @@ EMBEDDING_MODEL_NAME = "text-embedding-3-large"
 LLM_VERSION = "gpt-4o-mini"
 
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
+ACCESS_TOKEN_EXPIRE_MINUTES = 15
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
-
+TOKEN_BLACKLIST_COLLECTION_NAME = "token_blacklist"
 
 # Test credentials for integration testing
 TEST_USER_EMAIL = os.getenv("TEST_USER_EMAIL")

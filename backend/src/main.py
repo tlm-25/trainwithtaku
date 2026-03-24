@@ -5,9 +5,16 @@ from src.database.user_management.password import hash_password,is_correct_passw
 from src.database.user_management.utils import check_if_email_already_in_use
 from src.chatbot.chat_history import get_all_stored_user_chats, get_specific_stored_user_chat
 from src.chatbot.chat_response import stream_chatbot_response
-from src.config import USER_ACCOUNTS_COLLECTION_NAME, CHAT_COLLECTION_NAME, TEST_CHAT_COLLECTION_NAME,VECTOR_STORE_COLLECTION_NAME, ACCESS_TOKEN_EXPIRE_MINUTES
+from src.config import USER_ACCOUNTS_COLLECTION_NAME, CHAT_COLLECTION_NAME, TEST_CHAT_COLLECTION_NAME,VECTOR_STORE_COLLECTION_NAME, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
 from src.schemas import UserSignUpForm, UserLoginForm, UserEmail,ClientForm, ChatRequest, Conversation, ChatHistoryRequest, ChatMessage
-from src.database.user_management.jwt_token import create_access_token, get_user_by_email, get_current_user
+
+
+from src.database.user_management.jwt_token import (create_access_token, 
+                                                    get_user_by_email, 
+                                                    get_current_user, 
+                                                    create_refresh_token, 
+                                                    verify_token, 
+                                                    blacklist_token)
 import bcrypt
 from pydantic import ValidationError
 #mongo db
@@ -27,7 +34,7 @@ from jwt.exceptions import InvalidTokenError
 from contextlib import asynccontextmanager
 import uuid
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 #configuration for logging file
 
 
@@ -74,18 +81,21 @@ async def add_user(user_sign_up_form:UserSignUpForm,database:AsyncDatabase=Depen
 
     #if any of the input fields are invalid
     if not check_form_valid:
+        print(f"form_submit_message {form_submit_message}")
 
         #if user already exists
         if "already in use" in form_submit_message.lower():
             #  409 error code (request conflict, with current state of resource)
             error_code = 409
+            
         
         #if confirm password and password fields do not match
-        if "do not match" in form_submit_message.lower():
+        elif "do not match" in form_submit_message.lower():
             error_code = 400
         else:
             # 422 error code (unprocessable entity) - inputs not in correct format
             error_code = 422
+
 
         logging.info(f"Failed to sign up: {form_submit_message}")
         return JSONResponse(content={"message":f"Failed to sign up: {form_submit_message}"},status_code=error_code)
@@ -130,9 +140,23 @@ async def login_with_access_token(database:AsyncDatabase=Depends(create_or_get_d
         
         if is_password_correct:
             # create and return JWT token if authenticated sucessfully
-            access_token = create_access_token(data={"sub":str(user_info["_id"])})
+            access_token = await create_access_token(data={"sub":str(user_info["_id"])})
+
+            # refresh token
+            refresh_token = await create_refresh_token(data={"sub":str(user_info["_id"])})
+            
+            max_age = REFRESH_TOKEN_EXPIRE_DAYS* 24 * 60 * 60 # length of validility of refrehs token in seconds (for browser cookie)
+            
+            response = JSONResponse(content={"access_token":access_token,"token_type":"bearer","message":"successful login"}, status_code=200)
+            # not sending refresh token to the client - setting to http only (stop javascript based attacks).
+            # storing refresh token in browser cookie
+            response.set_cookie(
+                key="refresh_token",value=refresh_token, httponly=True, samesite="lax", max_age=max_age
+
+            )
+
  
-            return JSONResponse(content={"access_token":access_token,"token_type":"bearer","message":"successful login"}, status_code=200)
+            return response
         else:
             return JSONResponse(content={"message":"Incorrect email or password"}, status_code=401)
         
@@ -142,6 +166,40 @@ async def login_with_access_token(database:AsyncDatabase=Depends(create_or_get_d
 
 
 
+@app.post("/refresh")
+async def refresh_access_token(request:Request,database:AsyncDatabase=Depends(create_or_get_database)):
+    '''
+    Get a refresh token
+
+    :param request: Requst object containing information from browser cookie
+    :type request: Request
+    :param database: User and chatbot database
+    :type databse: AsyncDatabase
+ 
+    '''
+    refresh_token = request.cookies.get("refresh_token")
+
+    if not refresh_token:
+        raise HTTPException(
+            status_code=401,
+            detail="Refresh token missing.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+
+    user = await verify_token(
+        token=refresh_token,
+        expected_token_type="refresh",
+        database=database,
+    )
+
+    new_access_token = await create_access_token(data={"sub":str(user["_id"])})
+    return JSONResponse(
+        content={"access_token":new_access_token,"token_type":"bearer"},
+        status_code=200
+    )
+    
+    
 
 
 
@@ -280,6 +338,9 @@ async def create_new_chat(user:dict = Depends(get_current_user),database:AsyncDa
 
 
 
+
+
+
 @app.post("/clear_chat")
 async def clear_chat(chat:ChatHistoryRequest,database:AsyncDatabase=Depends(create_or_get_database)):
 
@@ -322,7 +383,8 @@ async def delete_chat(chat:ChatHistoryRequest,database:AsyncDatabase=Depends(cre
     
 
 
-   
+
+
 
 
 @app.get("/me")
@@ -334,6 +396,8 @@ async def get_user(user = Depends(get_current_user),database:AsyncDatabase=Depen
         raise HTTPException(status_code=401,detail="Invalid authentication credentials")
     
     return JSONResponse(content={"user_email":user["email"]},status_code=200)
+
+
 
 
 
@@ -359,8 +423,56 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         
 
         
-
-        
+@app.post("/logout")
+async def logout(request:Request,database:AsyncDatabase=Depends(create_or_get_database)):
+    """
+    Invalidate the user's refresh token and clear the browser cookie. - Logs the user out
+ 
+    The refresh token's JTI is written to the blacklist collection with its
+    original expiry datetime.  The TTL index on that collection will
+    automatically remove the blacklist entry once the token would have expired
+    anyway, so the blacklist stays bounded.
+ 
+    This endpoint deliberately does NOT require a valid access token — a user
+    should always be able to log out, even if their access token has already
+    expired.  The refresh token in the cookie is sufficient proof of identity
+    for the purpose of invalidation.
+ 
+    :param request: Incoming request (used to read the cookie).
+    :type request: Request
+    :param database: Async MongoDB database instance.
+    :type database: AsyncDatabase
+    :return: 200 on success; always clears the cookie regardless of token validity.
+    :rtype: JSONResponse
+    """
+    refresh_token = request.cookies.get("refresh_token")  
+    response = JSONResponse(content={"message": "successfully logged out"}, status_code=200)   
+    # Always clear the cookie — even if the token is already invalid or missing.
+    response.delete_cookie(key="refresh_token", httponly=True, samesite="lax")
+ 
+    if not refresh_token:
+        return response
+ 
+    try:
+        user = await verify_token(
+            token=refresh_token,
+            expected_token_type="refresh",
+            database=database,
+        )
+        payload = user["_jwt_payload"]
+        jti = payload.get("jti")
+        exp = payload.get("exp")
+ 
+        if jti and exp:
+            expiry_dt = datetime.fromtimestamp(exp, tz=timezone.utc)
+            await blacklist_token(jti=jti, expiry=expiry_dt, database=database)
+ 
+    except HTTPException:
+        # Token is already invalid/expired — nothing to blacklist, still return 200.
+        pass
+ 
+    return response
+  
         
 
 
