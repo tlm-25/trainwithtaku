@@ -11,16 +11,19 @@ from src.schemas import TokenData, UserInDB,User
 from src.database.user_management.utils import check_if_email_already_in_use
 from src.database.connection import create_or_get_database
 from pymongo.asynchronous.database import AsyncDatabase
-from pymongo.asynchronous.collection import AsyncCollection
+
 from datetime import datetime, timedelta, timezone
 # from jose import JWTError
 import jwt
 import uuid
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException, status
 from jwt.exceptions import InvalidTokenError
 from bson import ObjectId
 from bson.errors import InvalidId
+import hmac
+
+import hashlib as hash
 oath2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 async def create_access_token(data:dict)->str:
@@ -258,6 +261,47 @@ async def verify_token(token:str, expected_token_type:str,database:AsyncDatabase
 
 
 
+def hash_token(token_string:str)->bytes:
+    '''
+    Hash a token using HMAC-SHA256 with the application secret key.
+    Suitable for refresh tokens. This ties the hash to the server secret,
+    meaning DB access alone is not enough to forge or recompute hashes.
+    
+    Using hmac instead of bcrypt for token hashing because bcrypt cannot handle the length of refresh tokens (has a constranint of 72 bytes)
+
+    :param token_string: user's token in raw string format
+    :type token_string: str
+    :return: hashed_token - byte string for hashed token
+    :rtype: bytes
+    '''
+
+    token_hash = hmac.new(key=JWT_SECRET_KEY.encode("utf-8"),msg=token_string.encode("utf-8"),digestmod=hash.sha256).hexdigest()
+    # Byte string of hashed token
+    return token_hash.encode("utf-8")
+
+
+
+
+
+def is_correct_token(token_string:str,stored_hash:bytes)->bool:
+    """
+    Verify a token against a stored HMAC hash.
+    Uses constant time comparison to prevent timing attacks.
+
+    :param token: Raw token string to verify
+    :type token: str
+    :param stored_hash: Previously stored HMAC hash to compare against
+    :type stored_hash: str
+    :return: True if token matches stored hash, False otherwise
+    :rtype: bool
+    """
+
+    expected = hash_token(token_string)
+
+
+    # constant time comparison — prevents timing attacks where attacker
+    # measures response time to guess hash character by character
+    return hmac.compare_digest(expected, stored_hash)
 
 
 

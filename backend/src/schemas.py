@@ -130,6 +130,7 @@ class UserInDB(User):
     Output schema when retrieving user info (excludes hashed password)
     '''
     password:str
+    refresh_token: Optional[str] = None
 
 class RefreshTokenREquest(BaseModel):
     refresh_token:str

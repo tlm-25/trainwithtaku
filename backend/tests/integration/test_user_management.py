@@ -170,11 +170,17 @@ async def test_new_refresh_token_is_useable():
     protected endpoint (/me).
     '''
     with TestClient(app=app) as client:
-        client.post(
+        
+        login_response = client.post(
             url="/login_with_access_token",
             data={"username": TEST_USER_EMAIL, "password": TEST_USER_PASSWORD},
         )
- 
+
+        refresh_token_cookie = login_response.cookies.get("refresh_token")
+        assert refresh_token_cookie is not None, "Refresh token must be set on login"
+
+    
+        # Note-  refresh token cookie automatically inclided in this request by testclient, simulating how a browser would send the cookie
         refresh_response = client.post(url="/refresh")
         new_access_token = refresh_response.json()["access_token"]
  
@@ -215,6 +221,7 @@ async def test_refresh_with_invalid_cookie_returns_401():
 async def test_logout_twice_still_returns_200():
     '''
     Test that calling /logout twice does not error — idempotent logout.
+    Test that it allows logout even if refresh token already blacklisted
     '''
     with TestClient(app=app) as client:
         client.post(
