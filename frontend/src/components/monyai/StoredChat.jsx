@@ -8,7 +8,8 @@ function StoredChat(props){
 
     const {conversationId,setChatLogFunction,setCurrentChatIDFunction,currentChatID,allStoredChatsState,setAllStoredChatsFunction,currentChatLogState, index, chatSelectedFlag, setChatSelectedFlagFunction, getSpecificChatFunction} = props
 
-    const {globalUser} = useAuth()
+    const {globalUser,fetchWithAuth} = useAuth()
+
 
 
     function replaceLastNCharacters(string,n){
@@ -34,12 +35,8 @@ function StoredChat(props){
 
 
             //get the specific chat from the chat history 
-            const response = await fetch(`http://localhost:8000/get_chat_history`,{
+            const response = await fetchWithAuth(`/api/get_chat_history`,{
             method: 'POST',
-            headers:{
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${globalUser.token}`,
-           },
             body: JSON.stringify({conversation_id:conversationId})
 
             })
@@ -88,17 +85,13 @@ function StoredChat(props){
 
         
         if (!chatSelectedFlag) {
-            const response = await fetch(`http://localhost:8000/delete_chat`, {
-            method: "DELETE",
-            body: JSON.stringify({
-                conversation_id: conversationId
 
-            }),
+                const response = await fetchWithAuth(`/api/delete_chat`, {
+                method: "DELETE",
+                body: JSON.stringify({
+                    conversation_id: conversationId
 
-            headers: {
-                "Authorization": `Bearer ${globalUser.token}`,
-                "Content-Type": "application/json"
-            }
+                }),
 
             });
 
@@ -148,17 +141,12 @@ function StoredChat(props){
                 }
 
 
-                const response = await fetch(`http://localhost:8000/delete_chat`, {
+                const response = await fetchWithAuth(`/api/delete_chat`, {
                     method: "DELETE",
                     body: JSON.stringify({
                     conversation_id: conversationId
 
                     }),
-
-                    headers: {
-                        "Authorization": `Bearer ${globalUser.token}`,
-                        "Content-Type": "application/json"
-                    }
 
                     });
 
@@ -177,17 +165,12 @@ function StoredChat(props){
             //if we delete the last chat
             else {
 
-                const response = await fetch(`http://localhost:8000/delete_chat`, {
+                const response = await fetchWithAuth(`/api/delete_chat`, {
                 method: "DELETE",
                 body: JSON.stringify({
                 conversation_id: conversationId
 
                 }),
-
-                headers: {
-                    "Authorization": `Bearer ${globalUser.token}`,
-                    "Content-Type": "application/json"
-                    }
 
                 });
 

@@ -3,6 +3,7 @@ import '../../index.css'
 import StoredChat from './StoredChat';
 import { getAllStoredChats } from '../../utils';
 import { useAuth } from '../../context/AuthContext';
+import {toast} from 'react-hot-toast'
 function ChatWindow() {
 
     const [userInput, setUserInput] = useState('');
@@ -39,7 +40,7 @@ function ChatWindow() {
     //tracking if user has pressed the cancel button
     const cancelledRef = useRef(null)
 
-    const {globalUser,logout} = useAuth()
+    const {globalUser,logout,fetchWithAuth} = useAuth()
     // Load chat history for current selected chat
     useEffect(() => {
 
@@ -53,7 +54,7 @@ function ChatWindow() {
 
 
 
-         getAllStoredChats(setAllCreatedChats,globalUser.token);
+         getAllStoredChats(setAllCreatedChats,fetchWithAuth);
         
 
     },[])
@@ -92,13 +93,12 @@ function ChatWindow() {
     const clearChatHistory = async (event) => {
         event.preventDefault();
         try{
-            const response = await fetch(`http://localhost:8000/clear_chat`, {
+            const response = await fetchWithAuth(`/api/clear_chat`, {
                 method: 'POST',
                 body: JSON.stringify({
                     conversation_id: currentChatID
 
                 }),
-                headers: {"Content-Type": "application/json"}
 
             });
 
@@ -107,17 +107,16 @@ function ChatWindow() {
                 // console.log(response)
                 // setChatLog([{ type: 'bot', message: userInput,timestamp:String(now)])
                 //get the specific chat from the chat history 
-                const response = await fetch(`http://localhost:8000/get_chat_history`,{
+                const response = await fetchWithAuth(`/api/get_chat_history`,{
                 method: 'POST',
                 body: JSON.stringify({conversation_id:currentChatID}),
-                headers: {"Authorization":`Bearer ${globalUser.token}`,
-                            "Content-Type":"application/json"}
+
 
                 })
                 const chatData = await response.json()
 
                 setChatLog([chatData[0]])
-                await getAllStoredChats(setAllCreatedChats,globalUser.token)
+                await getAllStoredChats(setAllCreatedChats,fetchWithAuth)
                 
             }
             
@@ -135,25 +134,25 @@ function ChatWindow() {
     async function createNewChat(event) {
 
         //if user not logged in, block creating a new chat
-        if(!globalUser.token) return;
+        if(!globalUser) {
+            toast.error(` Please log in again to use the chatbot`,);
+            return
+            
+        };
 
         event.preventDefault();
         setCreatingChat(true)
 
         //add the new chat to the database
-        const response = await fetch("http://localhost:8000/create_new_chat",{
-            method: "POST",
-            headers:{
-                "Authorization": `Bearer ${globalUser.token}`,
-                "Content-Type":"application/json"
-            }
+        const response = await fetchWithAuth("/api/create_new_chat",{
+            method: "POST"
 
         })
 
         //get the data about the chat and convert to json
         const data = await response.json()
         //get the updated list of chats
-        await getAllStoredChats(setAllCreatedChats,globalUser.token)
+        await getAllStoredChats(setAllCreatedChats,fetchWithAuth)
 
         setCreatingChat(false)
 
@@ -195,7 +194,7 @@ function ChatWindow() {
         }); 
 
         //get cancel endpoint (with specific query id)
-        const cancelEndpoint = `http://localhost:8000/cancel_response/${queryID}`
+        const cancelEndpoint = `/api/cancel_response/${queryID}`
         fetch(cancelEndpoint,{
             method: "POST"
         }).then(res=>res.json()).then(console.log("cancelled")).catch(err => console.error("Failed to cancel", err));
@@ -241,21 +240,20 @@ function ChatWindow() {
 
         try {
             // The API call to our FastAPI backend
-            const response = await fetch("http://localhost:8000/chat", {
+            const response = await fetchWithAuth("/api/chat", {
                 method: "POST",
-            headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${globalUser.token}`
-            },
-            body: JSON.stringify({
-                user_message: userMessage,
-                chat_history: newChatLog,
-                //may update to include client form later
-                client_form: null,
-                conversation_id: conversationId
-            }),
-            signal: signal
-                });
+
+                body: JSON.stringify({
+                    user_message: userMessage,
+                    chat_history: newChatLog,
+                    //may update to include client form later
+                    client_form: null,
+                    conversation_id: conversationId
+                }),
+
+                signal: signal
+                
+            });
 
             //get the the query ID of the user input
              const chatInputQueryID = response.headers.get("X-Query-ID")
@@ -387,12 +385,9 @@ function ChatWindow() {
 
 
             //get the specific chat based on chat ID
-            const response = await fetch(`http://localhost:8000/get_chat_history`,{
+            const response = await fetchWithAuth(`/api/get_chat_history`,{
             method: 'POST',
             body: JSON.stringify({conversation_id:newChatID}),
-
-            headers: {"Authorization":`Bearer ${globalUser.token}`,
-                    "Content-Type": "application/json"}
 
             })
 

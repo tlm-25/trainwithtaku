@@ -157,6 +157,7 @@ async def login_with_access_token(database:AsyncDatabase=Depends(create_or_get_d
 
             # refresh token
             refresh_token = await create_refresh_token(data={"sub":str(user_info["_id"])})
+            print(f"generated refresh token")
             
 
 
@@ -175,6 +176,7 @@ async def login_with_access_token(database:AsyncDatabase=Depends(create_or_get_d
                 key="refresh_token",value=refresh_token, httponly=True, samesite="lax", max_age=max_age
 
             )
+            print("cookie set on response")
 
  
             return response
@@ -200,6 +202,7 @@ async def refresh_access_token(request:Request,database:AsyncDatabase=Depends(cr
     '''
     # get refresh token from cookie (assumes the user is logged in and has refresh token stored in browser cookie)
     refresh_token = request.cookies.get("refresh_token")
+
 
     # if no refresh token provided, return 401 error - user must be logged in to refresh the access token
     if not refresh_token:
@@ -409,29 +412,35 @@ async def create_new_chat(user:dict = Depends(get_current_user),database:AsyncDa
 
 
 @app.post("/clear_chat")
-async def clear_chat(chat:ChatHistoryRequest,database:AsyncDatabase=Depends(create_or_get_database)):
+async def clear_chat(chat:ChatHistoryRequest,database:AsyncDatabase=Depends(create_or_get_database),user:dict=Depends(get_current_user)):
 
-    main_database = database
+    
+    
+    try: 
+        main_database = database
 
-    conversation_collection = main_database[CHAT_COLLECTION_NAME]
+        conversation_collection = main_database[CHAT_COLLECTION_NAME]
 
-    conversation_id = chat.conversation_id
-    #default chatbot message
-    default_message = [ChatMessage(message="Hello! I'm your refund assistant - How can I help?", type="bot",timestamp=str(datetime.now())).model_dump()]
+        conversation_id = chat.conversation_id
+        #default chatbot message
+        default_message = [ChatMessage(message="Hello! I'm your refund assistant - How can I help?", type="bot",timestamp=str(datetime.now())).model_dump()]
 
-    # clear the chat and replace with default message
-    clear_all_messages_from_convo = await conversation_collection.update_one(
-    {"conversation_id": conversation_id},
-    {"$set": {"messages": default_message}})
+        # clear the chat and replace with default message
+        clear_all_messages_from_convo = await conversation_collection.update_one(
+        {"conversation_id": conversation_id,"email":user["email"]},
+        {"$set": {"messages": default_message}})
 
-          
-    print("Successfully cleared chat")
-    logging.info("Successfully cleared chat")
+            
+        print("Successfully cleared chat")
+        logging.info("Successfully cleared chat")
 
-    return JSONResponse(content={"message":"successfully cleared chat"},status_code=200)
+        return JSONResponse(content={"message":"successfully cleared chat"},status_code=200)
+    except Exception as e:
+        return JSONResponse(content={"message":"Failed to delete chat"},status_code=500)
+
 
 @app.delete("/delete_chat")
-async def delete_chat(chat:ChatHistoryRequest,database:AsyncDatabase=Depends(create_or_get_database)):
+async def delete_chat(chat:ChatHistoryRequest,database:AsyncDatabase=Depends(create_or_get_database),user:dict = Depends(get_current_user)):
     '''
         Delete chat from database
     
@@ -442,10 +451,12 @@ async def delete_chat(chat:ChatHistoryRequest,database:AsyncDatabase=Depends(cre
 
         conversation_collection = main_database[CHAT_COLLECTION_NAME]
         conversation_id = chat.conversation_id
-        delete_conversation = await conversation_collection.delete_one({"conversation_id":conversation_id})
+
+        # delete conversation with matching conversation ID and user email (only allow deletion if chat belong to the user)
+        delete_conversation = await conversation_collection.delete_one({"conversation_id":conversation_id,"email":user["email"]})
         return JSONResponse(content={"message":"successfully deleted chat"},status_code=200)
     except Exception as e:
-        JSONResponse(content={"message":"Failed to delete chat"},status_code=500)
+        return JSONResponse(content={"message":"Failed to delete chat"},status_code=500)
 
     
 
@@ -531,10 +542,20 @@ async def logout(request:Request,database:AsyncDatabase=Depends(create_or_get_da
         payload = user["_jwt_payload"]
         jti = payload.get("jti")
         exp = payload.get("exp")
+
+        # JTI blacklist (catches reuse after logout)
  
         if jti and exp:
             expiry_dt = datetime.fromtimestamp(exp, tz=timezone.utc)
             await blacklist_token(jti=jti, expiry=expiry_dt, database=database)
+        
+
+        #  remove stored hash (catches rotation theft)
+        user_collection = database[USER_ACCOUNTS_COLLECTION_NAME]
+        await user_collection.update_one(
+            {"_id": user["_id"]},
+            {"$unset": {"refresh_token": ""}}
+        )
  
     except HTTPException:
         # Token is already invalid/expired — nothing to blacklist, still return 200.
