@@ -448,10 +448,6 @@ function ChatWindow() {
                 
                 <div className='chat-area'>
                         
-                        <div className='chatbot-title'>Hey, I'm MonyAI your fitness assistant - Ask me anything!</div>
-
-                     
-
                     <div className="chat-window">
                         {chatLog.map((message, index) => (
                             <div key={`${message.timestamp}-${index}`}>
