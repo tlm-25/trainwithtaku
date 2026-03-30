@@ -22,6 +22,7 @@ def hash_password(password_string:str)->bytes:
 def is_correct_password(password_string:str,hashed_password:bytes)->bool:
     '''
     Check if user entered correct password when logging in
+    Can also be used to verify that a refresh token provided by user matches hashed refrehs token stored in a database (for token refresh or logout)
     
     :param password_string: Password entered by user when logging in
     :type password_string: str

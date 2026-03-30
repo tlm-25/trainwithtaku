@@ -5,9 +5,18 @@ from src.database.user_management.password import hash_password,is_correct_passw
 from src.database.user_management.utils import check_if_email_already_in_use
 from src.chatbot.chat_history import get_all_stored_user_chats, get_specific_stored_user_chat
 from src.chatbot.chat_response import stream_chatbot_response
-from src.config import USER_ACCOUNTS_COLLECTION_NAME, CHAT_COLLECTION_NAME, TEST_CHAT_COLLECTION_NAME,VECTOR_STORE_COLLECTION_NAME, ACCESS_TOKEN_EXPIRE_MINUTES
+from src.config import USER_ACCOUNTS_COLLECTION_NAME, CHAT_COLLECTION_NAME, TEST_CHAT_COLLECTION_NAME,VECTOR_STORE_COLLECTION_NAME, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
 from src.schemas import UserSignUpForm, UserLoginForm, UserEmail,ClientForm, ChatRequest, Conversation, ChatHistoryRequest, ChatMessage
-from src.database.user_management.jwt_token import create_access_token, get_user_by_email, get_current_user
+
+
+from src.database.user_management.jwt_token import (create_access_token, 
+                                                    get_user_by_email, 
+                                                    get_current_user, 
+                                                    create_refresh_token, 
+                                                    verify_token, 
+                                                    blacklist_token,
+                                                    hash_token,
+                                                    is_correct_token)
 import bcrypt
 from pydantic import ValidationError
 #mongo db
@@ -27,7 +36,7 @@ from jwt.exceptions import InvalidTokenError
 from contextlib import asynccontextmanager
 import uuid
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 #configuration for logging file
 
 
@@ -74,18 +83,21 @@ async def add_user(user_sign_up_form:UserSignUpForm,database:AsyncDatabase=Depen
 
     #if any of the input fields are invalid
     if not check_form_valid:
+        print(f"form_submit_message {form_submit_message}")
 
         #if user already exists
         if "already in use" in form_submit_message.lower():
             #  409 error code (request conflict, with current state of resource)
             error_code = 409
+            
         
         #if confirm password and password fields do not match
-        if "do not match" in form_submit_message.lower():
+        elif "do not match" in form_submit_message.lower():
             error_code = 400
         else:
             # 422 error code (unprocessable entity) - inputs not in correct format
             error_code = 422
+
 
         logging.info(f"Failed to sign up: {form_submit_message}")
         return JSONResponse(content={"message":f"Failed to sign up: {form_submit_message}"},status_code=error_code)
@@ -101,7 +113,7 @@ async def add_user(user_sign_up_form:UserSignUpForm,database:AsyncDatabase=Depen
         #otherwise, add the new user to the database (username, hashed password, user_type)
         new_user = { "email": email_input,"password":hashed_password, "user_type": user_type_input }
 
-        #TODO - function to send user confirmation email with passcode etc.?
+        #TODO - function to send user confirmation welcome email after signing up
 
         #insert new user to database
         inserted_documents = await users_collection.insert_one(document=new_user)
@@ -113,7 +125,18 @@ async def add_user(user_sign_up_form:UserSignUpForm,database:AsyncDatabase=Depen
 
 @app.post("/login_with_access_token")
 async def login_with_access_token(database:AsyncDatabase=Depends(create_or_get_database),form_data: OAuth2PasswordRequestForm = Depends())->JSONResponse:
+    '''
+    This endpoint authenticates the user using username and password, sets the refresh token, stores it in the cookie, and returns an access token in the response body
     
+    :param database: Database instance (MongoDB)
+    :type database: AsyncDatabase
+    :param form_data: User login details (username and password) from the login form
+    :type form_data: OAuth2PasswordRequestForm
+    
+    
+    '''
+
+
     main_database = database
     user_collection = main_database[USER_ACCOUNTS_COLLECTION_NAME]
     #check if email address can be found
@@ -130,9 +153,33 @@ async def login_with_access_token(database:AsyncDatabase=Depends(create_or_get_d
         
         if is_password_correct:
             # create and return JWT token if authenticated sucessfully
-            access_token = create_access_token(data={"sub":str(user_info["_id"])})
+            access_token = await create_access_token(data={"sub":str(user_info["_id"])})
+
+            # refresh token
+            refresh_token = await create_refresh_token(data={"sub":str(user_info["_id"])})
+            print(f"generated refresh token")
+            
+
+
+            # store hashed refresh token in database on login for specific user - to verify against when user tries to refresh access token or log out (invalidate refresh token)
+            await user_collection.update_one({"_id":user_info["_id"]},{"$set":{"refresh_token":hash_token(token_string=refresh_token)}})
+
+
+
+
+            max_age = REFRESH_TOKEN_EXPIRE_DAYS* 24 * 60 * 60 # length of validility of refresh token in seconds (for browser cookie)
+            
+            response = JSONResponse(content={"access_token":access_token,"token_type":"bearer","message":"successful login"}, status_code=200)
+            # not sending refresh token to the client - setting to http only (stop javascript based attacks).
+            # storing refresh token in browser cookie
+            response.set_cookie(
+                key="refresh_token",value=refresh_token, httponly=True, samesite="lax", max_age=max_age
+
+            )
+            print("cookie set on response")
+
  
-            return JSONResponse(content={"access_token":access_token,"token_type":"bearer","message":"successful login"}, status_code=200)
+            return response
         else:
             return JSONResponse(content={"message":"Incorrect email or password"}, status_code=401)
         
@@ -142,14 +189,92 @@ async def login_with_access_token(database:AsyncDatabase=Depends(create_or_get_d
 
 
 
+@app.post("/refresh")
+async def refresh_access_token(request:Request,database:AsyncDatabase=Depends(create_or_get_database)):
+    '''
+    Get a refresh token
+
+    :param request: Request object containing information from browser cookie
+    :type request: Request
+    :param database: User and chatbot database
+    :type databse: AsyncDatabase
+ 
+    '''
+    # get refresh token from cookie (assumes the user is logged in and has refresh token stored in browser cookie)
+    refresh_token = request.cookies.get("refresh_token")
+
+
+    # if no refresh token provided, return 401 error - user must be logged in to refresh the access token
+    if not refresh_token:
+        raise HTTPException(
+            status_code=401,
+            detail="Refresh token is missing in browser cookie. Please log in",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # check that refresh token is valid
+    user = await verify_token(
+        token=refresh_token,
+        expected_token_type="refresh",
+        database=database,
+    )
+
+    # check that the user associated with the refresh token exists in the database , and that the refresh token provided matches the (hashed) refresh token stored in database for that user (verify that the refresh token is valid and has not been rotated/invalidated by a new login or refresh)
+    user_collection = database[USER_ACCOUNTS_COLLECTION_NAME]
+    user_info = await user_collection.find_one({"_id": user["_id"]})
+    stored_refresh_token_hashed = user_info.get("refresh_token")
+
+    # token field removed from logout
+    if not stored_refresh_token_hashed:
+        raise HTTPException(status_code=401, detail="Refresh token has been rotated")
+
+
+    if not is_correct_token(token_string=refresh_token,stored_hash=stored_refresh_token_hashed):
+       
+        # potential token theft — invalidate everything if old refresh token is being used by someone else after a new one has already been issued.  This is a security measure to protect users who may have had their refresh token stolen.
+        await user_collection.update_one(
+            {"_id": user["_id"]},
+            #MongoDB syntex to remove refresh_token field
+            {"$unset": {"refresh_token": ""}}
+        )
+
+
+
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+
+
+    new_access_token = await create_access_token(data={"sub":str(user["_id"])})
+    # new refresh token is generated and sent to user, and old refresh token is invalidated (by overwriting the hashed value in the database with the new one, so old refresh token can no longer be used to refresh access token or log out)
+    new_refresh_token = await create_refresh_token(data={"sub": str(user["_id"])})  # brand new token
+
+    # overwrite old hash in MongoDB
+    await user_collection.update_one(
+        {"_id": user["_id"]},
+        {"$set": {"refresh_token": hash_token(new_refresh_token)}}
+    )
+
+    response = JSONResponse(
+        content={"access_token":new_access_token,"token_type":"bearer"},
+        status_code=200
+    )
+
+    # length of validility of refresh token in seconds (for browser cookie)
+    max_age = REFRESH_TOKEN_EXPIRE_DAYS* 24 * 60 * 60 
+
+    response.set_cookie(
+        key="refresh_token",value=new_refresh_token, httponly=True, samesite
+        ="lax", max_age=max_age)
+    
+    return response
+    
+    
 
 
 
 @app.post("/get_stored_user_chats")
-async def get_stored_user_chats(user:dict=Depends(get_current_user),database:AsyncDatabase=Depends(create_or_get_database)):
-
-    try:
-        '''
+async def get_stored_user_chats(user:dict=Depends(get_current_user),database:AsyncDatabase=Depends(create_or_get_database))->JSONResponse:
+    '''
         Retrieve all stored conversations for a given user email from the database
 
         :param email: Retrieved user info
@@ -159,6 +284,9 @@ async def get_stored_user_chats(user:dict=Depends(get_current_user),database:Asy
         :return: List of conversations associated with the user
         :rtype: list[dict]
         '''
+
+    try:
+        
         main_database = database
         conversations_collection = main_database[CHAT_COLLECTION_NAME]
         user_email = user["email"]
@@ -280,30 +408,39 @@ async def create_new_chat(user:dict = Depends(get_current_user),database:AsyncDa
 
 
 
+
+
+
 @app.post("/clear_chat")
-async def clear_chat(chat:ChatHistoryRequest,database:AsyncDatabase=Depends(create_or_get_database)):
+async def clear_chat(chat:ChatHistoryRequest,database:AsyncDatabase=Depends(create_or_get_database),user:dict=Depends(get_current_user)):
 
-    main_database = database
+    
+    
+    try: 
+        main_database = database
 
-    conversation_collection = main_database[CHAT_COLLECTION_NAME]
+        conversation_collection = main_database[CHAT_COLLECTION_NAME]
 
-    conversation_id = chat.conversation_id
-    #default chatbot message
-    default_message = [ChatMessage(message="Hello! I'm your refund assistant - How can I help?", type="bot",timestamp=str(datetime.now())).model_dump()]
+        conversation_id = chat.conversation_id
+        #default chatbot message
+        default_message = [ChatMessage(message="Hello! I'm your refund assistant - How can I help?", type="bot",timestamp=str(datetime.now())).model_dump()]
 
-    # clear the chat and replace with default message
-    clear_all_messages_from_convo = await conversation_collection.update_one(
-    {"conversation_id": conversation_id},
-    {"$set": {"messages": default_message}})
+        # clear the chat and replace with default message
+        clear_all_messages_from_convo = await conversation_collection.update_one(
+        {"conversation_id": conversation_id,"email":user["email"]},
+        {"$set": {"messages": default_message}})
 
-          
-    print("Successfully cleared chat")
-    logging.info("Successfully cleared chat")
+            
+        print("Successfully cleared chat")
+        logging.info("Successfully cleared chat")
 
-    return JSONResponse(content={"message":"successfully cleared chat"},status_code=200)
+        return JSONResponse(content={"message":"successfully cleared chat"},status_code=200)
+    except Exception as e:
+        return JSONResponse(content={"message":"Failed to delete chat"},status_code=500)
+
 
 @app.delete("/delete_chat")
-async def delete_chat(chat:ChatHistoryRequest,database:AsyncDatabase=Depends(create_or_get_database)):
+async def delete_chat(chat:ChatHistoryRequest,database:AsyncDatabase=Depends(create_or_get_database),user:dict = Depends(get_current_user)):
     '''
         Delete chat from database
     
@@ -314,15 +451,18 @@ async def delete_chat(chat:ChatHistoryRequest,database:AsyncDatabase=Depends(cre
 
         conversation_collection = main_database[CHAT_COLLECTION_NAME]
         conversation_id = chat.conversation_id
-        delete_conversation = await conversation_collection.delete_one({"conversation_id":conversation_id})
+
+        # delete conversation with matching conversation ID and user email (only allow deletion if chat belong to the user)
+        delete_conversation = await conversation_collection.delete_one({"conversation_id":conversation_id,"email":user["email"]})
         return JSONResponse(content={"message":"successfully deleted chat"},status_code=200)
     except Exception as e:
-        JSONResponse(content={"message":"Failed to delete chat"},status_code=500)
+        return JSONResponse(content={"message":"Failed to delete chat"},status_code=500)
 
     
 
 
-   
+
+
 
 
 @app.get("/me")
@@ -334,6 +474,8 @@ async def get_user(user = Depends(get_current_user),database:AsyncDatabase=Depen
         raise HTTPException(status_code=401,detail="Invalid authentication credentials")
     
     return JSONResponse(content={"user_email":user["email"]},status_code=200)
+
+
 
 
 
@@ -359,8 +501,69 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         
 
         
+@app.post("/logout")
+async def logout(request:Request,database:AsyncDatabase=Depends(create_or_get_database)):
+    """
+    Invalidate the user's refresh token and clear the browser cookie. - Logs the user out
+ 
+    The refresh token's JTI is written to the blacklist collection with its
+    original expiry datetime.  The TTL index on that collection will
+    automatically remove the blacklist entry once the token would have expired
+    anyway, so the blacklist stays bounded.
+ 
+    This endpoint deliberately does NOT require a valid access token — a user
+    should always be able to log out, even if their access token has already
+    expired.  The refresh token in the cookie is sufficient proof of identity
+    for the purpose of invalidation.
+ 
+    :param request: Incoming request (used to read the cookie).
+    :type request: Request
+    :param database: Async MongoDB database instance.
+    :type database: AsyncDatabase
+    :return: 200 on success; always clears the cookie regardless of token validity.
+    :rtype: JSONResponse
+    """
+    refresh_token = request.cookies.get("refresh_token")  
+    response = JSONResponse(content={"message": "successfully logged out"}, status_code=200)   
+    # Always clear the cookie — even if the token is already invalid or missing.
+    response.delete_cookie(key="refresh_token", httponly=True, samesite="lax")
+ 
+    if not refresh_token:
+        return response
+    
+    # blacklisting the refresh token so it cannot be used again
+ 
+    try:
+        user = await verify_token(
+            token=refresh_token,
+            expected_token_type="refresh",
+            database=database,
+        )
+        payload = user["_jwt_payload"]
+        jti = payload.get("jti")
+        exp = payload.get("exp")
 
+        # JTI blacklist (catches reuse after logout)
+ 
+        if jti and exp:
+            expiry_dt = datetime.fromtimestamp(exp, tz=timezone.utc)
+            await blacklist_token(jti=jti, expiry=expiry_dt, database=database)
         
+
+        #  remove stored hash (catches rotation theft)
+        user_collection = database[USER_ACCOUNTS_COLLECTION_NAME]
+        await user_collection.update_one(
+            {"_id": user["_id"]},
+            {"$unset": {"refresh_token": ""}}
+        )
+ 
+    except HTTPException:
+        # Token is already invalid/expired — nothing to blacklist, still return 200.
+        # handles smoothly in case where user logs out with already expired token, or if they try to log out twice in a row (second time there is no token)
+        pass
+ 
+    return response
+  
         
 
 

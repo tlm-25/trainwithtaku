@@ -8,6 +8,7 @@ from src.config import TEST_DATABASE_NAME, MONGO_DB_CONNECTION_STRING, TEST_USER
 from pymongo import AsyncMongoClient
 from pymongo.asynchronous.database import AsyncDatabase
 
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 import pytest, pytest_asyncio
 
@@ -24,7 +25,7 @@ async def create_or_get_test_database():
             database = mongo_client[TEST_DATABASE_NAME]
             yield database
     
-    except Exception as e:
+    except RuntimeError as e:
           raise RuntimeError(f"failed to connect to database {TEST_DATABASE_NAME}: {e}")
 
 
@@ -155,9 +156,92 @@ async def test_get_current_user():
 
         # Use the access token to get current user info
         headers = {"Authorization": f"Bearer {login_response_json['access_token']}"}
-        current_user_response = client.post(url="/get_current_user", headers=headers)
+        current_user_response = client.get(url="/me", headers=headers)
         current_user_response_json  = current_user_response.json()
         assert current_user_response.status_code == 200
         assert "user_email" in current_user_response_json
         print(current_user_response_json)
         assert current_user_response_json["user_email"] == TEST_USER_EMAIL
+
+@pytest.mark.asyncio
+async def test_new_refresh_token_is_useable():
+    '''
+    Test that the new access token returned by /refresh actually works on a
+    protected endpoint (/me).
+    '''
+    with TestClient(app=app) as client:
+        
+        login_response = client.post(
+            url="/login_with_access_token",
+            data={"username": TEST_USER_EMAIL, "password": TEST_USER_PASSWORD},
+        )
+
+        refresh_token_cookie = login_response.cookies.get("refresh_token")
+        assert refresh_token_cookie is not None, "Refresh token must be set on login"
+
+    
+        # Note-  refresh token cookie automatically inclided in this request by testclient, simulating how a browser would send the cookie
+        refresh_response = client.post(url="/refresh")
+        new_access_token = refresh_response.json()["access_token"]
+ 
+        me_response = client.get(
+            url="/me",
+            headers={"Authorization": f"Bearer {new_access_token}"},
+        )
+        assert me_response.status_code == 200
+        assert me_response.json()["user_email"] == TEST_USER_EMAIL
+
+@pytest.mark.asyncio
+async def test_refresh_without_cookie_returns_401():
+    '''
+    Test that /refresh returns 401 when no refresh token cookie is present.
+    '''
+    with TestClient(app=app) as client:
+        # Deliberately do not login — no cookie will be set
+        refresh_response = client.post(url="/refresh")
+        assert refresh_response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_refresh_with_invalid_cookie_returns_401():
+    '''
+    Test that /refresh returns 401 when the cookie contains a tampered or
+    invalid token string.
+    '''
+    with TestClient(app=app) as client:
+        
+
+        client.cookies.set("refresh_token", "this.is.not.a.valid.jwt")
+        refresh_response = client.post(url="/refresh")
+        assert refresh_response.status_code == 401
+
+# TODO - logout tests
+
+@pytest.mark.asyncio
+async def test_logout_twice_still_returns_200():
+    '''
+    Test that calling /logout twice does not error — idempotent logout.
+    Test that it allows logout even if refresh token already blacklisted
+    '''
+    with TestClient(app=app) as client:
+        client.post(
+            url="/login_with_access_token",
+            data={"username": TEST_USER_EMAIL, "password": TEST_USER_PASSWORD},
+        )
+ 
+        first_logout = client.post(url="/logout")
+        assert first_logout.status_code == 200
+ 
+        second_logout = client.post(url="/logout")
+        assert second_logout.status_code == 200
+
+@pytest.mark.asyncio
+async def test_logout_without_cookie_still_returns_200():
+    '''
+    Test that /logout returns 200 even when no refresh token cookie is present
+    — logout should never error, regardless of cookie state.
+    '''
+    with TestClient(app=app) as client:
+        # Deliberately do not login
+        logout_response = client.post(url="/logout")
+        assert logout_response.status_code == 200
