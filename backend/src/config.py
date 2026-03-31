@@ -1,6 +1,5 @@
 import os
 from dotenv import load_dotenv
-from fastapi_mail import FastMail, ConnectionConfig
 import yaml
 from pydantic_settings import BaseSettings
 from pydantic import BaseModel, ConfigDict
@@ -55,7 +54,10 @@ TEST_CONVERSATION_ID = os.getenv("TEST_CONVERSATION_ID")
 
 class EnvConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
-    environment:str
+    app_environment:str
+    log_level:str = "DEBUG"
+
+
 
 class EmailConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
@@ -65,10 +67,12 @@ class EmailConfig(BaseModel):
     mail_server:str
     mail_port:int
     mail_password:str
-    mail_start_tls:bool = True
-    mail_ssl_tls:bool = False
+    mail_start_tls:bool
+    mail_ssl_tls:bool
     test_user_email:str
+    dev_email:str
     test_user_password:str
+    welcome_email_file_name:str
 
 
 
@@ -89,7 +93,7 @@ class DatabaseConfig(BaseModel):
 class MonyaiChatbotConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
     openai_api_key:str
-    embedding_model:str
+    embedding_model_name:str
     llm_version:str
     top_k:int
     test_conversation_id:str
@@ -104,14 +108,15 @@ class AuthTokenConfig(BaseModel):
 
 
 
+
 class ProjectConfig(BaseSettings):
     model_config = ConfigDict(frozen=True)
     ''' Represent project configuration parameters as Pydantic model for type validation and ease of access '''
     env_config: EnvConfig
-    email_config: EmailConfig
-    database_config: DatabaseConfig
-    monyai_chatbot_config: MonyaiChatbotConfig
-    auth_token_config: AuthTokenConfig
+    email: EmailConfig
+    database: DatabaseConfig
+    chatbot: MonyaiChatbotConfig
+    auth: AuthTokenConfig
 
 
 def load_config_from_yaml(yaml_config_path:str)->ProjectConfig:
@@ -123,7 +128,13 @@ def load_config_from_yaml(yaml_config_path:str)->ProjectConfig:
     """
     # Set app environment (dev or prod) - set default to dev  if APP_ENVIRONMENT environment variable not set 
     app_environment = os.getenv("APP_ENVIRONMENT").lower() or "dev"
- 
+
+    # set default log level to DEBUG for dev environment. In production, default to INFO for more readable logs and to conceal secret values that might be included in dev logs
+    log_level = "DEBUG" if app_environment in ["dev","development"] else "INFO"
+    
+    # Configure environment
+    env_config = EnvConfig(app_environment=os.getenv("APP_ENVIRONMENT").lower() or "dev",log_level=log_level)
+
     # Validate that yaml file exists
     if not os.path.exists(yaml_config_path):
         raise FileNotFoundError(f"Could not find find cofig file {yaml_config_path}")
@@ -141,17 +152,21 @@ def load_config_from_yaml(yaml_config_path:str)->ProjectConfig:
     with open(yaml_config_path) as f:
         
         config_dict = yaml.safe_load(f)
+        print(config_dict)
 
-        # inject secrets from environment variables into config dict (these are not stored in YAML for security)
-        config_dict["email_config"]["mail_password"] = os.getenv("MAIL_PASSWORD")
-        config_dict["email_config"]["test_user_password"] = TEST_USER_PASSWORD
-        config_dict["database_config"]["mongo_db_connection_string"] = MONGO_DB_CONNECTION_STRING
+    # inject secrets from environment variables into config dict (these are not stored in YAML for security)
+    config_dict["email"]["mail_password"] = os.getenv("MAIL_PASSWORD")
+    config_dict["email"]["test_user_password"] = TEST_USER_PASSWORD
+    config_dict["email"]["test_user_password"] = TEST_USER_PASSWORD
+    config_dict["database"]["mongo_db_connection_string"] = MONGO_DB_CONNECTION_STRING
 
-        config_dict["monyai_chatbot_config"]["openai_api_key"] = OPENAI_API_KEY
-        config_dict["monyai_chatbot_config"]["test_conversation_id"] =TEST_CONVERSATION_ID
+    config_dict["chatbot"]["openai_api_key"] = OPENAI_API_KEY
+    config_dict["chatbot"]["test_conversation_id"] =TEST_CONVERSATION_ID
 
-        config_dict["auth_token_config"]["jwt_secret_key"] = JWT_SECRET_KEY
-        config_dict["auth_token_config"]["jwt_algorithm"] = JWT_ALGORITHM
+    config_dict["auth"]["jwt_secret_key"] = JWT_SECRET_KEY
+    config_dict["auth"]["jwt_algorithm"] = JWT_ALGORITHM
+
+    config_dict["env_config"]=  env_config.model_dump()
     return ProjectConfig(**config_dict)
 
     

@@ -6,6 +6,10 @@ from src.database.user_management.utils import check_if_email_already_in_use
 from src.chatbot.chat_history import get_all_stored_user_chats, get_specific_stored_user_chat
 from src.chatbot.chat_response import stream_chatbot_response
 from src.config import USER_ACCOUNTS_COLLECTION_NAME, CHAT_COLLECTION_NAME, TEST_CHAT_COLLECTION_NAME,VECTOR_STORE_COLLECTION_NAME, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
+
+from src.config import APP_CONFIG
+from src.email_utils.sender import WELCOME_EMAIL_FILE_NAME, send_email
+
 from src.schemas import UserSignUpForm, UserLoginForm, UserEmail,ClientForm, ChatRequest, Conversation, ChatHistoryRequest, ChatMessage
 
 
@@ -24,7 +28,7 @@ from pymongo import AsyncMongoClient
 from pymongo.asynchronous.database import AsyncDatabase
 from pymongo.asynchronous.collection import AsyncCollection
 
-from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi import FastAPI, Depends, HTTPException, Request, BackgroundTasks
 from fastapi.responses import StreamingResponse, Response, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
@@ -52,10 +56,11 @@ app.add_middleware(
 )
 
 
+EMAIL_CONFIG = APP_CONFIG.email
 
 #create user 
 @app.post("/add_user")
-async def add_user(user_sign_up_form:UserSignUpForm,database:AsyncDatabase=Depends(create_or_get_database))->JSONResponse:
+async def add_user(user_sign_up_form:UserSignUpForm,background_tasks:BackgroundTasks,database:AsyncDatabase=Depends(create_or_get_database))->JSONResponse:
     '''
         Add new user to the database 
 
@@ -117,6 +122,9 @@ async def add_user(user_sign_up_form:UserSignUpForm,database:AsyncDatabase=Depen
 
         #insert new user to database
         inserted_documents = await users_collection.insert_one(document=new_user)
+
+        # make the email send a background task so that it doesn't bloxk the flow, and sign up can complete and let email send occur in the background
+        background_tasks.add_task(send_email,recipients=[email_input],subject="Welcome!",context={"user":email_input},html_file_name=WELCOME_EMAIL_FILE_NAME)
         
         return JSONResponse(content={"message":f"{form_submit_message}"},status_code=200)
 

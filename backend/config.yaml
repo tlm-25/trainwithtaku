@@ -1,21 +1,27 @@
 email:
-  from: trainwithtaku@gmail.com
-  mail_from_username: trainwithtaku
-  mail_from_name: TrainwithTaku
+  mail_from: trainwithtaku@gmail.com
+  mail_from_username: trainwithtaku@gmail.com
+  mail_from_name: Train with Taku
+  # config for Gmail SMTP server - for production, use environment variables to set mail_password and test_user_password
   mail_server: smtp.gmail.com
-  port: 587
+  mail_port: 587
+  mail_start_tls: True
+  mail_ssl_tls: False
   test_user_email: existing_email@gmail.com
+  dev_email: trainwithtakudev@gmail.com
+  welcome_email_file_name: welcome.html
 
 
 database:
   database_name: trainwithtaku_web
-  test_database_name: trainwithtaku_web_test
   user_accounts_collection_name: user_accounts
   vector_store_collection_name: monyai_context_vectors
   chat_collection_name: monyai_chats
   token_blacklist_collection_name: token_blacklist
   mongo_vector_index_name: VectorSearchChatbot
   test_mongo_vector_index_name: VectorSearchTest
+  test_database_name: trainwithtaku_web_test
+  
 
   
 chatbot:
