@@ -331,3 +331,6 @@ async def logout(request:Request,database:AsyncDatabase=Depends(create_or_get_da
         pass
  
     return response
+
+
+#TODO - reset password endpoint
