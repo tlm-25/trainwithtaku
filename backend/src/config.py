@@ -97,6 +97,7 @@ class MonyaiChatbotConfig(BaseModel):
     llm_version:str
     top_k:int
     test_conversation_id:str
+    output_token_limit:int
 
 class AuthTokenConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
@@ -157,11 +158,11 @@ def load_config_from_yaml(yaml_config_path:str)->ProjectConfig:
     # inject secrets from environment variables into config dict (these are not stored in YAML for security)
     config_dict["email"]["mail_password"] = os.getenv("MAIL_PASSWORD")
     config_dict["email"]["test_user_password"] = TEST_USER_PASSWORD
-    config_dict["email"]["test_user_password"] = TEST_USER_PASSWORD
     config_dict["database"]["mongo_db_connection_string"] = MONGO_DB_CONNECTION_STRING
 
     config_dict["chatbot"]["openai_api_key"] = OPENAI_API_KEY
     config_dict["chatbot"]["test_conversation_id"] =TEST_CONVERSATION_ID
+    
 
     config_dict["auth"]["jwt_secret_key"] = JWT_SECRET_KEY
     config_dict["auth"]["jwt_algorithm"] = JWT_ALGORITHM

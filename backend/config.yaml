@@ -20,7 +20,7 @@ database:
   token_blacklist_collection_name: token_blacklist
   mongo_vector_index_name: VectorSearchChatbot
   test_mongo_vector_index_name: VectorSearchTest
-  test_database_name: trainwithtaku_web_test
+  test_database_name: trainwithtaku_test
   
 
   
