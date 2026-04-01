@@ -3,7 +3,12 @@ from src.main import app
 from src.schemas import UserSignUpForm, UserLoginForm
 from src.database.connection import create_or_get_database
 from src.database.user_management.utils import check_if_email_already_in_use
-from src.config import TEST_DATABASE_NAME, MONGO_DB_CONNECTION_STRING, TEST_USER_EMAIL, TEST_USER_PASSWORD
+from src.config import APP_CONFIG
+
+MONGO_DB_CONNECTION_STRING = APP_CONFIG.database.mongo_db_connection_string
+TEST_DATABASE_NAME  = APP_CONFIG.database.test_database_name
+TEST_USER_EMAIL = APP_CONFIG.email.test_user_email
+TEST_USER_PASSWORD = APP_CONFIG.email.test_user_password
 
 from pymongo import AsyncMongoClient
 from pymongo.asynchronous.database import AsyncDatabase

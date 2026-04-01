@@ -1,4 +1,6 @@
-from src.config import EMBEDDING_MODEL_NAME, OPENAI_API_KEY
+from src.config import APP_CONFIG
+EMBEDDING_MODEL_NAME = APP_CONFIG.chatbot.embedding_model_name
+OPENAI_API_KEY = APP_CONFIG.chatbot.openai_api_key
 from langchain_openai import OpenAIEmbeddings
 
 async def get_embedding_model() -> OpenAIEmbeddings:

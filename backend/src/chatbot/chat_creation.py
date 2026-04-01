@@ -1,5 +1,6 @@
 from src.schemas import Conversation
-from src.config import CHAT_COLLECTION_NAME
+from src.config import APP_CONFIG
+CHAT_COLLECTION_NAME = APP_CONFIG.database.chat_collection_name
 
 
 

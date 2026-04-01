@@ -59,7 +59,7 @@ async def send_email(recipients:list[str],subject:str,context:dict=None,html_fil
     :param recipients: list of email addresses to send to
     :param subject: subject line of the email
     :param context: template variables to inject into the HTML template (e.g. {"name": "Alice"} replaces {{ name }})
-    :param html_file_name: name of the HTML template file to render and attach (must exist in the templates folder)
+    :param html_file_name: name of the HTML template file to render and attach (must exist in the 'templates' folder)
     :param text_content: plain-text body of the email
     '''
     email_message = await _create_message(recipients=recipients,subject=subject,context=context,html_file_name=html_file_name,text_content=text_content)

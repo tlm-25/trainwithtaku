@@ -1,6 +1,9 @@
 #upload files to vector database
 
-from src.config import VECTOR_STORE_COLLECTION_NAME, OPENAI_API_KEY,EMBEDDING_MODEL_NAME
+from src.config import APP_CONFIG
+VECTOR_STORE_COLLECTION_NAME = APP_CONFIG.database.vector_store_collection_name
+OPENAI_API_KEY = APP_CONFIG.chatbot.openai_api_key
+EMBEDDING_MODEL_NAME = APP_CONFIG.chatbot.embedding_model_name
 from src.database.connection import create_or_get_database
 from src.database.document_source_validation import check_valid_url_format, check_valid_pdf_path_format
 

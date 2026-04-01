@@ -1,12 +1,19 @@
 from src.database.connection import get_mongo_client, create_or_get_database, create_or_get_collection
 from src.chatbot.chat_history import get_all_stored_user_chats
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from src.chatbot.chat_response import stream_chatbot_response
-from src.config import CHAT_COLLECTION_NAME, TEST_CHAT_COLLECTION_NAME, TEST_DATABASE_NAME, MONGO_DB_CONNECTION_STRING, TEST_USER_EMAIL, TEST_USER_PASSWORD, TEST_CONVERSATION_ID
-from src.schemas import UserEmail, ClientForm,Conversation
+from src.schemas import  ClientForm
 from src.main import app
 
+from src.config import APP_CONFIG
 
+MONGO_DB_CONNECTION_STRING = APP_CONFIG.database.mongo_db_connection_string
+VECTOR_STORE_COLLECTION_NAME = APP_CONFIG.database.vector_store_collection_name
+TEST_MONGO_VECTOR_INDEX_NAME = APP_CONFIG.database.test_mongo_vector_index_name
+TEST_DATABASE_NAME  = APP_CONFIG.database.test_database_name
+TEST_USER_EMAIL = APP_CONFIG.email.test_user_email
+TEST_USER_PASSWORD = APP_CONFIG.email.test_user_password
+
+TEST_CONVERSATION_ID = APP_CONFIG.chatbot.test_conversation_id
 
 from fastapi.testclient import TestClient
 

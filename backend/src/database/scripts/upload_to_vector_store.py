@@ -1,5 +1,7 @@
 from src.database.vector_store import generate_documents, upload_to_vector_store
-from src.config import DATABASE_NAME, VECTOR_STORE_COLLECTION_NAME
+from src.config import APP_CONFIG
+DATABASE_NAME = APP_CONFIG.database.database_name
+VECTOR_STORE_COLLECTION_NAME = APP_CONFIG.database.vector_store_collection_name
 
 #script for uploading documents to vector store collection in the database
 from src.database.connection import create_or_get_database

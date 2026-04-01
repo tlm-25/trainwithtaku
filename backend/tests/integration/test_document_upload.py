@@ -1,10 +1,21 @@
 #Tests for uploading to vector store
 from src.main import app
 from src.database.connection import create_or_get_database
-from src.config import VECTOR_STORE_COLLECTION_NAME, TEST_DATABASE_NAME, MONGO_DB_CONNECTION_STRING
+# from src.config import VECTOR_STORE_COLLECTION_NAME, TEST_DATABASE_NAME, MONGO_DB_CONNECTION_STRING
 from src.database.vector_store import upload_to_vector_store, generate_documents
 from pymongo import AsyncMongoClient
 import pytest
+
+from src.config import APP_CONFIG
+
+MONGO_DB_CONNECTION_STRING = APP_CONFIG.database.mongo_db_connection_string
+VECTOR_STORE_COLLECTION_NAME = APP_CONFIG.database.vector_store_collection_name
+TEST_DATABASE_NAME  = APP_CONFIG.database.test_database_name
+
+
+
+
+
 async def create_or_get_test_database():
     '''
     Database for testing only

@@ -5,11 +5,11 @@ from typing_extensions import Self, TypedDict, override
 
 # from langchain_community.vectorstores import MongoDBAtlasVectorSearch
 from src.embeddings import get_embedding_model
-from src.config import TOP_K
+from src.config import APP_CONFIG
+TOP_K = APP_CONFIG.chatbot.top_k
 from src.schemas import ClientForm
 # async def get_retriever
 # retriever = MongoDBAtlasVectorSearch(collection=).as_retriever()
-
 
 
 

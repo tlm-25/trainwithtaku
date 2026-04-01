@@ -1,6 +1,11 @@
 from src.retrieval import CustomAsyncMongoDBAtlasRetriever, create_training_retrieval_query_from_form_and_user_query, format_documents_for_prompt
 from src.chatbot.chat_history import convert_chat_history_to_langchain_format
-from src.config import LLM_VERSION, OPENAI_API_KEY, VECTOR_STORE_COLLECTION_NAME, MONGO_VECTOR_INDEX_NAME, CHAT_COLLECTION_NAME
+from src.config import APP_CONFIG
+LLM_VERSION = APP_CONFIG.chatbot.llm_version
+OPENAI_API_KEY = APP_CONFIG.chatbot.openai_api_key
+VECTOR_STORE_COLLECTION_NAME = APP_CONFIG.database.vector_store_collection_name
+MONGO_VECTOR_INDEX_NAME = APP_CONFIG.database.mongo_vector_index_name
+CHAT_COLLECTION_NAME = APP_CONFIG.database.chat_collection_name
 
 from src.schemas import ClientForm, ChatMessage
 from src.prompts import TRAINING_PROGRAM_PROMPT_CONCISE, MEAL_PLANNING_PROMPT

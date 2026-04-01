@@ -5,9 +5,11 @@ from src.database.user_management.password import hash_password,is_correct_passw
 from src.database.user_management.utils import check_if_email_already_in_use
 from src.chatbot.chat_history import get_all_stored_user_chats, get_specific_stored_user_chat
 from src.chatbot.chat_response import stream_chatbot_response
-from src.config import USER_ACCOUNTS_COLLECTION_NAME, CHAT_COLLECTION_NAME, TEST_CHAT_COLLECTION_NAME,VECTOR_STORE_COLLECTION_NAME, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
-
 from src.config import APP_CONFIG
+USER_ACCOUNTS_COLLECTION_NAME = APP_CONFIG.database.user_accounts_collection_name
+CHAT_COLLECTION_NAME = APP_CONFIG.database.chat_collection_name
+VECTOR_STORE_COLLECTION_NAME = APP_CONFIG.database.vector_store_collection_name
+REFRESH_TOKEN_EXPIRE_DAYS = APP_CONFIG.auth.refresh_token_expire_days
 from src.email_utils.sender import WELCOME_EMAIL_FILE_NAME, send_email
 
 from src.schemas import UserSignUpForm, UserLoginForm, UserEmail,ClientForm, ChatRequest, Conversation, ChatHistoryRequest, ChatMessage
@@ -431,7 +433,7 @@ async def clear_chat(chat:ChatHistoryRequest,database:AsyncDatabase=Depends(crea
 
         conversation_id = chat.conversation_id
         #default chatbot message
-        default_message = [ChatMessage(message="Hello! I'm your refund assistant - How can I help?", type="bot",timestamp=str(datetime.now())).model_dump()]
+        default_message = [ChatMessage(message="Hi, I'm Monyai your fitness assistant! Ask me any fitness or nutrition related questions.", type="bot",timestamp=str(datetime.now())).model_dump()]
 
         # clear the chat and replace with default message
         clear_all_messages_from_convo = await conversation_collection.update_one(
