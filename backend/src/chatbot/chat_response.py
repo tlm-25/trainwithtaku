@@ -1,4 +1,4 @@
-from src.retrieval import CustomAsyncMongoDBAtlasRetriever, create_training_retrieval_query_from_form_and_user_query, format_documents_for_prompt
+from src.search.retrieval import CustomAsyncMongoDBAtlasRetriever, create_training_retrieval_query_from_form_and_user_query, format_documents_for_prompt
 from src.chatbot.chat_history import convert_chat_history_to_langchain_format
 from src.config import APP_CONFIG
 LLM_VERSION = APP_CONFIG.chatbot.llm_version
@@ -8,14 +8,12 @@ MONGO_VECTOR_INDEX_NAME = APP_CONFIG.database.mongo_vector_index_name
 CHAT_COLLECTION_NAME = APP_CONFIG.database.chat_collection_name
 
 from src.schemas import ClientForm, ChatMessage
-from src.prompts import TRAINING_PROGRAM_PROMPT_CONCISE, MEAL_PLANNING_PROMPT
+from src.prompts import TRAINING_PROGRAM_PROMPT_CONCISE
 
-from langchain_core.prompts.chat import ChatPromptTemplate, MessagesPlaceholder, HumanMessagePromptTemplate
-from langchain.chains import history_aware_retriever
-from langchain.schema import Document
+from langchain_core.prompts.chat import ChatPromptTemplate
+
 from langchain_openai import ChatOpenAI
-from langchain_core.runnables import RunnablePassthrough, RunnableParallel,RunnableLambda
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import  HumanMessage
 from pymongo.asynchronous.collection import AsyncCollection
 
 from datetime import datetime

@@ -2,7 +2,7 @@
 
 
  
-from  src.retrieval import format_documents_for_prompt
+from  backend.src.search.retrieval import format_documents_for_prompt
 
 from langchain.schema import Document
 

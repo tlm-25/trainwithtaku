@@ -4,7 +4,8 @@ from langchain.schema import Document
 from typing_extensions import Self, TypedDict, override
 
 # from langchain_community.vectorstores import MongoDBAtlasVectorSearch
-from src.embeddings import get_embedding_model
+from src.search.embeddings import get_embedding_model
+
 from src.config import APP_CONFIG
 TOP_K = APP_CONFIG.chatbot.top_k
 from src.schemas import ClientForm

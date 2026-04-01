@@ -1,4 +1,4 @@
-from src.retrieval import  CustomAsyncMongoDBAtlasRetriever
+from src.search.retrieval import  CustomAsyncMongoDBAtlasRetriever
 
 from src.config import APP_CONFIG
 

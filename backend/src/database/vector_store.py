@@ -7,7 +7,7 @@ EMBEDDING_MODEL_NAME = APP_CONFIG.chatbot.embedding_model_name
 from src.database.connection import create_or_get_database
 from src.database.document_source_validation import check_valid_url_format, check_valid_pdf_path_format
 
-from src.embeddings import get_embedding_model
+from src.search.embeddings import get_embedding_model
 from pymongo.asynchronous.database import AsyncDatabase
 
 from langchain_community.vectorstores import MongoDBAtlasVectorSearch
