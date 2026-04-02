@@ -1,7 +1,8 @@
 from pymongo.asynchronous.collection import AsyncCollection
+
 async def check_if_email_already_in_use(email_input:str,collection:AsyncCollection)->bool:
     '''
-    Check if an email is alreadu in use check_if_email_already_in_use
+    Check if an email is already used in the database
     
     :param email_input: Email input value
     :type email_input: str

@@ -4,7 +4,8 @@ from email.message import EmailMessage
 import pytest
 import logging
 from src.config import APP_CONFIG
-
+from src.main import app
+from fastapi.testclient import TestClient
 EMAIL_CONFIG = APP_CONFIG.email
 
 welcome_template_file_name = "welcome.html"
@@ -68,3 +69,15 @@ async def test_send_email():
     email_message = await send_email(recipients=recipients,subject=test_subject,context={"user":EMAIL_CONFIG.test_user_email},html_file_name=welcome_template_file_name)
 
     assert "success" in email_message["message"].lower()
+
+
+
+@pytest.mark.asyncio
+async def test_send_reset_password_link():
+    with TestClient(app=app) as client:
+        # Deliberately do not login - accessed if user forgets password so they won't be logged in 
+        # deliberately not handling non-existent emails so that we do not give attackers clues for accounts
+        send_password_response= client.post(url="/send_change_password_link",json={"email":EMAIL_CONFIG.dev_email})
+        
+        assert send_password_response.status_code == 200
+

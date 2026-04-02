@@ -56,6 +56,7 @@ class DatabaseConfig(BaseModel):
     token_blacklist_collection_name: str
     mongo_vector_index_name: str
     test_mongo_vector_index_name: str
+    password_reset_collection_name: str
 
 
 
@@ -74,6 +75,13 @@ class AuthTokenConfig(BaseModel):
     jwt_algorithm:str
     access_token_expire_minutes:int
     refresh_token_expire_days:int
+    reset_password_link_expire_minutes:int
+
+class DomainConfig(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    frontend_domain_dev:str 
+    frontend_domain_prod:str
+
 
 
 
@@ -87,6 +95,8 @@ class ProjectConfig(BaseSettings):
     database: DatabaseConfig
     chatbot: MonyaiChatbotConfig
     auth: AuthTokenConfig
+    domain:DomainConfig
+
 
 
 def load_config_from_yaml(yaml_config_path:str)->ProjectConfig:
@@ -111,7 +121,7 @@ def load_config_from_yaml(yaml_config_path:str)->ProjectConfig:
     
     # Validate that yaml file is valid format
     if not yaml_config_path.endswith("yaml") and not yaml_config_path.endswith("yml"):
-        raise ValueError("{yaml_config_path} is not a valid yaml file. The file must have a .yml or .yaml extension (e.g. config.yaml)")
+        raise ValueError(f"{yaml_config_path} is not a valid yaml file. The file must have a .yml or .yaml extension (e.g. config.yaml)")
     
 
     # Validate that app environment is valid
@@ -122,7 +132,6 @@ def load_config_from_yaml(yaml_config_path:str)->ProjectConfig:
     with open(yaml_config_path) as f:
         
         config_dict = yaml.safe_load(f)
-        print(config_dict)
 
     # inject secrets from environment variables into config dict (these are not stored in YAML for security)
     config_dict["email"]["mail_password"] = os.getenv("MAIL_PASSWORD")

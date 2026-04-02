@@ -21,6 +21,7 @@ database:
   mongo_vector_index_name: VectorSearchChatbot
   test_mongo_vector_index_name: VectorSearchTest
   test_database_name: trainwithtaku_test
+  password_reset_collection_name: password_reset_tokens 
   
 
   
@@ -33,3 +34,8 @@ chatbot:
 auth:
   access_token_expire_minutes: 15
   refresh_token_expire_days: 7
+  reset_password_link_expire_minutes: 20
+
+domain:
+  frontend_domain_dev: http://localhost:5173
+  frontend_domain_prod: trainwithtaku.com

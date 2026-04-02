@@ -1,26 +1,29 @@
 
 from src.main import app
-from src.schemas import UserSignUpForm, UserLoginForm
+from src.schemas import UserSignUpForm, UserResetPasswordForm
 from src.database.connection import create_or_get_database
 from src.database.user_management.utils import check_if_email_already_in_use
+from src.database.user_management.password import hash_password, is_correct_password
 from src.config import APP_CONFIG
 
 MONGO_DB_CONNECTION_STRING = APP_CONFIG.database.mongo_db_connection_string
 TEST_DATABASE_NAME  = APP_CONFIG.database.test_database_name
+USER_ACCOUNTS_COLLECTION_NAME = APP_CONFIG.database.user_accounts_collection_name
 TEST_USER_EMAIL = APP_CONFIG.email.test_user_email
 TEST_USER_PASSWORD = APP_CONFIG.email.test_user_password
+PASSWORD_RESET_COLLECTION_NAME = APP_CONFIG.database.password_reset_collection_name
+PASSWORD_RESET_MINUTES = APP_CONFIG.auth.reset_password_link_expire_minutes
+
 
 from pymongo import AsyncMongoClient
 from pymongo.asynchronous.database import AsyncDatabase
-
+from datetime import datetime, timezone, timedelta
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 import pytest, pytest_asyncio
 
 from datetime import datetime 
 import uuid
-
-
 async def create_or_get_test_database():
     '''
     Database for testing only
@@ -250,3 +253,97 @@ async def test_logout_without_cookie_still_returns_200():
         # Deliberately do not login
         logout_response = client.post(url="/logout")
         assert logout_response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_reset_password_success():
+
+    '''
+    Test that password successfully resets 
+    
+    '''
+
+    try:
+
+        # create dummy user 
+        test_database = await create_or_get_test_database().__anext__()
+        users_collection = test_database[USER_ACCOUNTS_COLLECTION_NAME]
+
+        email = f"test{str(uuid.uuid4())}@gmail.com"
+        user_type = "trainee"
+        test_user_details = UserSignUpForm(email=email,password=TEST_USER_PASSWORD,confirm_password=TEST_USER_PASSWORD,user_type=user_type)
+        test_user_details_mock_json = test_user_details.model_dump()
+        response =  client.post(url="/add_user",json=test_user_details_mock_json)
+
+        #store user password hash for assert statement later
+        test_user_password_hash = hash_password(password_string=TEST_USER_PASSWORD)
+
+        dummy_token = str(uuid.uuid4())
+        # create user account 
+
+        dummy_password_new = TEST_USER_PASSWORD+"new"
+
+        
+        reset_collection = test_database[PASSWORD_RESET_COLLECTION_NAME]
+
+        await reset_collection.insert_one({
+            "token": dummy_token,
+            "email": email,
+            "expires_at": datetime.now(timezone.utc) + timedelta(minutes=PASSWORD_RESET_MINUTES)
+        })
+
+        reset_password_form = UserResetPasswordForm(new_password=dummy_password_new,confirm_new_password=dummy_password_new,token=dummy_token).model_dump()
+        response = client.post("/reset_password",json=reset_password_form)
+        user_updated = await users_collection.find_one(filter={"email": email}, projection={"_id": True,"password":True})
+        # bcrypt is non-deterministic so use is_correct_password instead of comparing hashes directly
+        assert is_correct_password(password_string=dummy_password_new, hashed_password=user_updated["password"])
+        assert response.status_code == 200
+        assert "success" in response.json()["message"].lower()
+    finally:
+        await users_collection.delete_one(filter={"email":email})
+        await reset_collection.delete_one(filter={"token":dummy_token})
+
+
+
+
+
+
+
+
+@pytest.mark.asyncio
+async def test_expired_reset_password_token():
+    '''
+
+        Test that password reset properly handles an expired password
+    
+    
+    '''
+
+    try:
+        with TestClient(app=app) as client:
+            dummy_token  =str(uuid.uuid4())
+            dummy_password = "dummy_password"
+
+            
+            test_database = await create_or_get_test_database().__anext__()
+            reset_collection = test_database[PASSWORD_RESET_COLLECTION_NAME]
+            await reset_collection.insert_one({
+                "token": dummy_token,
+                "email": TEST_USER_EMAIL,
+                # simulate expired token
+                "expires_at": datetime.now(timezone.utc) - timedelta(minutes=1)
+            })
+
+            password_reset_request = UserResetPasswordForm(token=dummy_token,new_password=dummy_password,confirm_new_password=dummy_password)
+            password_reset_request_json = password_reset_request.model_dump()
+            response = client.post("/reset_password",json=password_reset_request_json)
+
+            assert response.status_code == 401
+            assert "expired" in response.json()["detail"].lower()
+
+    
+
+
+    finally:
+        # clean up database after test (remove the dummy entry)
+        await reset_collection.delete_one({"token": dummy_token})

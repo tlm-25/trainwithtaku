@@ -6,9 +6,9 @@ from src.database.user_management.utils import check_if_email_already_in_use
 
 
 
-from src.schemas import UserSignUpForm
+from src.schemas import UserSignUpForm, UserEmail, UserResetPasswordForm
 
-
+from src.database.user_management.sign_up_form import check_if_passwords_match,validate_password_format
 from src.database.user_management.jwt_token import (create_access_token, 
                                                     get_current_user, 
                                                     create_refresh_token, 
@@ -30,13 +30,23 @@ from fastapi.security import OAuth2PasswordRequestForm
 from contextlib import asynccontextmanager
 import uuid
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 
 from src.config import APP_CONFIG
+
 USER_ACCOUNTS_COLLECTION_NAME = APP_CONFIG.database.user_accounts_collection_name
 REFRESH_TOKEN_EXPIRE_DAYS = APP_CONFIG.auth.refresh_token_expire_days
+PASSWORD_RESET_COLLECTION_NAME = APP_CONFIG.database.password_reset_collection_name
+RESET_PASSWORD_LINK_EXPIRE_MINUTES = APP_CONFIG.auth.reset_password_link_expire_minutes
+ENV = APP_CONFIG.env_config.app_environment
+
+FRONTEND_URL = APP_CONFIG.domain.frontend_domain_dev.lower() if ENV in ["dev","development"] else APP_CONFIG.domain.frontend_domain_prod
+
 from src.email_utils.sender import WELCOME_EMAIL_FILE_NAME, send_email
+
+RESET_PASSWORD_EMAIL_FILE_NAME = "reset_password.html"
+
 
 
 
@@ -207,6 +217,7 @@ async def refresh_access_token(request:Request,database:AsyncDatabase=Depends(cr
     )
 
     # check that the user associated with the refresh token exists in the database , and that the refresh token provided matches the (hashed) refresh token stored in database for that user (verify that the refresh token is valid and has not been rotated/invalidated by a new login or refresh)
+    # check that the user associated with the refresh token exists in the database , and that the refresh token provided matches the (hashed) refresh token stored in database for that user (verify that the refresh token is valid and has not been rotated/invalidated by a new login or refresh)
     user_collection = database[USER_ACCOUNTS_COLLECTION_NAME]
     user_info = await user_collection.find_one({"_id": user["_id"]})
     stored_refresh_token_hashed = user_info.get("refresh_token")
@@ -215,25 +226,16 @@ async def refresh_access_token(request:Request,database:AsyncDatabase=Depends(cr
     if not stored_refresh_token_hashed:
         raise HTTPException(status_code=401, detail="Refresh token has been rotated")
 
-
-    if not is_correct_token(token_string=refresh_token,stored_hash=stored_refresh_token_hashed):
-       
-        # potential token theft — invalidate everything if old refresh token is being used by someone else after a new one has already been issued.  This is a security measure to protect users who may have had their refresh token stolen.
+    if not is_correct_token(token_string=refresh_token, stored_hash=stored_refresh_token_hashed):
+        # potential token theft — invalidate everything if old refresh token is being used by someone else after a new one has already been issued.
         await user_collection.update_one(
             {"_id": user["_id"]},
-            #MongoDB syntex to remove refresh_token field
             {"$unset": {"refresh_token": ""}}
         )
-
-
-
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
-
-
     new_access_token = await create_access_token(data={"sub":str(user["_id"])})
-    # new refresh token is generated and sent to user, and old refresh token is invalidated (by overwriting the hashed value in the database with the new one, so old refresh token can no longer be used to refresh access token or log out)
-    new_refresh_token = await create_refresh_token(data={"sub": str(user["_id"])})  # brand new token
+    new_refresh_token = await create_refresh_token(data={"sub": str(user["_id"])})
 
     # overwrite old hash in MongoDB
     await user_collection.update_one(
@@ -333,4 +335,92 @@ async def logout(request:Request,database:AsyncDatabase=Depends(create_or_get_da
     return response
 
 
-#TODO - reset password endpoint
+
+
+@router.post("/send_change_password_link")
+async def send_change_password_link(user_email:UserEmail, background_tasks:BackgroundTasks, database=Depends(create_or_get_database)):
+    '''
+        Endpoint to send a link to user's email if they need to change their password. Note that this endpoint does NOT
+        reset the password, but it sends a link to a user's email address if they have a registered account,
+        and the link will allow them to reset the password
+    '''
+    email = user_email.email
+    users_collection = database[USER_ACCOUNTS_COLLECTION_NAME]
+    user_exists = await check_if_email_already_in_use(email_input=email, collection=users_collection)
+
+    if user_exists:
+        logging.info("Generating token for password reset")
+        token = str(uuid.uuid4())
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=RESET_PASSWORD_LINK_EXPIRE_MINUTES)
+
+        # store opaque token in MongoDB — one time use, expires in 20 minutes
+        reset_collection = database[PASSWORD_RESET_COLLECTION_NAME]
+        
+        await reset_collection.insert_one({"token": token, "email": email, "expires_at": expires_at})
+
+        reset_link = f"{FRONTEND_URL}/reset-password?token={token}"
+        logging.info("Sending password reset link")
+        background_tasks.add_task(send_email, recipients=[email], subject="Reset your password", context={"reset_link": reset_link}, html_file_name=RESET_PASSWORD_EMAIL_FILE_NAME)
+
+    # always return 200 — deliberately ambiguous so attacker cannot infer if email address is registered
+    return JSONResponse(content={"message": f"Thank you. If your email has a registered TWT fitness account, you should receive an email with a link to reset your password. The link will expire after {RESET_PASSWORD_LINK_EXPIRE_MINUTES} minutes."}, status_code=200)
+    
+
+
+  
+@router.post("/reset_password")
+async def reset_password(reset_password_form:UserResetPasswordForm,database=Depends(create_or_get_database)):
+
+    '''
+        Reset user password 
+
+        :param reset_password_form: Form containing user email, and their desired new password (along with password reset token)
+        :param database: Database containing collection with reset tokens 
+    
+    '''
+    # token for resetting password 
+    token = reset_password_form.token
+    new_password = reset_password_form.new_password
+    confirm_new_password = reset_password_form.confirm_new_password
+
+    # look up token in reset collection
+    reset_collection = database[PASSWORD_RESET_COLLECTION_NAME]
+    reset_record = await reset_collection.find_one({"token": token})
+
+    # if token invalid or expired, (e.g. user tries to reset after token expired), give an error 
+    if not reset_record or reset_record["expires_at"].replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        logging.info("Invalid or expired reset token detected")
+        raise HTTPException(status_code=401, detail="The current reset password link has expired or is invalid. Please generate a new one ")
+
+    user_email = reset_record["email"]
+    users_collection = database[USER_ACCOUNTS_COLLECTION_NAME]
+
+    input_format_error_messages = []
+
+    is_password_valid_format = validate_password_format(password=new_password)
+    if not is_password_valid_format:
+        input_format_error_messages.append("Password is not valid format. It must contain:\n 1. lowercase and uppercase letters\n 2. At least 8 characters\n 3. at least one number\n 4. At least 1 special character")
+
+    passwords_match = check_if_passwords_match(password=new_password, confirm_password=confirm_new_password)
+    if not passwords_match:
+        input_format_error_messages.append("'Password' and 'Confirm Password' fields do not match")
+
+    if not (passwords_match and is_password_valid_format):
+        input_format_error_messages_str = " | ".join(input_format_error_messages)
+        error_code = 400 if "do not match" in input_format_error_messages_str.lower() else 422
+        return JSONResponse(content={"message": f"Could not reset password: {input_format_error_messages_str}"}, status_code=error_code)
+
+    # hash new password and get user
+    new_password_hash = hash_password(password_string=new_password)
+    user_info = await users_collection.find_one(filter={"email": user_email}, projection={"_id": True})
+
+    # update password
+    await users_collection.update_one(filter={"_id": user_info["_id"]}, update={"$set": {"password": new_password_hash}})
+
+    # invalidate all existing sessions - remove refresh token from user document in MongODB
+    await users_collection.update_one(filter={"_id": user_info["_id"]}, update={"$unset": {"refresh_token": ""}})
+
+    # delete reset token — once it has been set (prevents re-use)
+    await reset_collection.delete_one({"token": token})
+
+    return JSONResponse(content={"message": "Your password has successfully been reset. Please sign in with your new credentials"}, status_code=200)
