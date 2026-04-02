@@ -9,7 +9,7 @@ function Home() {
         <>
 
             <Layout>
-                <p> HEllo</p>
+                <p> Hello</p>
             </Layout>
         
         </>

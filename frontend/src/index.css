@@ -728,6 +728,51 @@ button:hover{
 
 
 
+/*FORGOT PASSWORD ELEMENTS*/ 
+
+.forgot-password-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  color: #f3f3f3;
+  background-color: #000000;
+  gap: 1rem;
+}
+
+/* .forgot-password-inputs-container {
+
+  
+} */
+
+.reset-password-button{
+  padding:1rem;
+  background-color : #78e058;
+  color: #0b3d0a;
+  
+
+
+}
+
+.reset-password-button:hover{
+
+  background-color : #0b3d0a;
+  color: #78e058;
+  scale: 1.05;
+
+
+
+}
+
+.forgot-password-form-header {
+  font-size: 1.05rem;
+}
+
+
+
+
+
+
 /*FOOTER*/
 
 .webpage-footer {

@@ -355,6 +355,9 @@ async def send_change_password_link(user_email:UserEmail, background_tasks:Backg
 
         # store opaque token in MongoDB — one time use, expires in 20 minutes
         reset_collection = database[PASSWORD_RESET_COLLECTION_NAME]
+
+        # invalidate any existing reset token for this user (if user clicks more than once in short time span)
+        await reset_collection.delete_many({"email": email})
         
         await reset_collection.insert_one({"token": token, "email": email, "expires_at": expires_at})
 
@@ -390,7 +393,7 @@ async def reset_password(reset_password_form:UserResetPasswordForm,database=Depe
     # if token invalid or expired, (e.g. user tries to reset after token expired), give an error 
     if not reset_record or reset_record["expires_at"].replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
         logging.info("Invalid or expired reset token detected")
-        raise HTTPException(status_code=401, detail="The current reset password link has expired or is invalid. Please generate a new one ")
+        raise HTTPException(status_code=401, detail="The current reset password link has expired or is invalid. If you wish to reset your password, send a new request.")
 
     user_email = reset_record["email"]
     users_collection = database[USER_ACCOUNTS_COLLECTION_NAME]
