@@ -4,6 +4,7 @@ import StoredChat from './StoredChat';
 import { getAllStoredChats } from '../../utils';
 import { useAuth } from '../../context/AuthContext';
 import {toast} from 'react-hot-toast'
+import ReactMarkdown from 'react-markdown'
 function ChatWindow() {
 
     const [userInput, setUserInput] = useState('');
@@ -41,6 +42,7 @@ function ChatWindow() {
     const cancelledRef = useRef(null)
 
     const {globalUser,logout,fetchWithAuth} = useAuth()
+    const [sidebarOpen, setSidebarOpen] = useState(false)
     // Load chat history for current selected chat
     useEffect(() => {
 
@@ -426,11 +428,14 @@ function ChatWindow() {
 
 
     return (
-        
-            <div className='main-chatbot-container'>
 
-                <div className="chat-selection-container">
-                    <img  src='/twt-logo.png' className='twt-logo'/> 
+            <div className='main-chatbot-container'>
+                <button className="hamburger-button" onClick={() => setSidebarOpen(!sidebarOpen)}>
+                    {sidebarOpen ? '✕' : '☰'}
+                </button>
+
+                <div className={`chat-selection-container${sidebarOpen ? ' sidebar-open' : ''}`}>
+                    <img  src='/twt-logo.png' className='twt-logo'/>
                     <button disabled={creatingChat} onClick={(event)=>createNewChat(event)}>
                         + New Chat
                     </button>
@@ -452,7 +457,7 @@ function ChatWindow() {
                         {chatLog.map((message, index) => (
                             <div key={`${message.timestamp}-${index}`}>
                                 <div className={`message ${message.type}`}>
-                                    {message.message}    
+                                    <ReactMarkdown>{message.message}</ReactMarkdown>
                                 </div>
 
                                 {<p className='message-timestamp'>{String(message.timestamp).substring(8,10)+ "/"+ String(message.timestamp).substring(5,7)+"/"+String(message.timestamp).substring(0,4)+" "+String(message.timestamp).substring(11,16)}</p> } 

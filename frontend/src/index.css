@@ -12,7 +12,7 @@
 
 }
 :root {
-  
+  --navbar-height: 64px;
   line-height: 1.5;
   font-weight: 400;
 
@@ -437,7 +437,7 @@ button:focus-visible {
 
 .main-chatbot-container {
   display: flex;
-  justify-content: space-evenly;
+
   width:100%;
 }
 
@@ -467,12 +467,10 @@ button:focus-visible {
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    height: 80vh;
-    width: 80vw;
-    
+    height: 100vh;
+    flex: 1;
+    min-width: 0;
     padding: 20px;
-    
-
 }
 
 
@@ -480,8 +478,7 @@ button:focus-visible {
 
 
 .chat-window {
-    /* width: 100%; */
-    
+    width: 100%;
     height: 100vh;
     border: 1px solid #e0e0e0;
     border-radius: 12px;
@@ -634,34 +631,75 @@ button:hover{
 .chat-preview-block {
   
   color: rgb(255, 255, 255);
-  background-color: #081350;
-  border: 1px solid #f5f5f5;
+
+
   border-radius: 3px;
   display: flex;
   justify-content: space-between;
+  padding: 1rem;
 
   
 }
 
 .chat-preview-block:hover{
-  background-color: black;
-  color:white;
+  background-color: #ffffff;
+  color:#000000;
   scale: 1.05;
   transition: 0.2s;
+  cursor: pointer;
 }
 
 
 
 
 
+.hamburger-button {
+  display: none;
+  position: fixed;
+  top: calc(var(--navbar-height) + 8px);
+  left: 12px;
+  z-index: 200;
+  background: #000000;
+  color: white;
+  border: none;
+  font-size: 1.4rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
 .chat-selection-container {
-  display:flex;
+  display: flex;
   flex-direction: column;
   background-color: #000000;
-  padding: 10px;
-  width: 20vw;
+  padding: 16px 12px;
+  align-items: center;
+  width: clamp(180px, 20vw, 280px);
+  min-width: 180px;
   height: 100vh;
+  gap: 1rem;
+  flex-shrink: 0;
+}
 
+@media (max-width: 768px) {
+  .hamburger-button {
+    display: block;
+  }
+
+  .chat-selection-container {
+    position: fixed;
+    left: -280px;
+    /* top: var(--navbar-height);
+    height: calc(100vh - var(--navbar-height)); */
+    width: 260px;
+    min-width: unset;
+    z-index: 100;
+    transition: left 0.3s ease;
+  }
+
+  .chat-selection-container.sidebar-open {
+    left: 0;
+  }
 }
 
 
@@ -690,7 +728,8 @@ button:hover{
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  width: 20%;
+  width: 100%;
+  gap:1rem;
   
 }
 
@@ -730,7 +769,7 @@ button:hover{
 
 /*FORGOT PASSWORD ELEMENTS*/ 
 
-.forgot-password-form {
+.password-reset {
   display: flex;
   flex-direction: column;
   align-items: center;

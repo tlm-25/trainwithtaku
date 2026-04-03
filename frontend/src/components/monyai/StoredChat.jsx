@@ -203,12 +203,12 @@ function StoredChat(props){
     return (
         <>
             
-            <button className={`chat-preview-block  ${currentChatID===conversationId ? "chat-selected":""}`} onClick={()=>{getSpecificChat(conversationId)}}>
+            <div className={`chat-preview-block  ${currentChatID===conversationId ? "chat-selected":""}`} onClick={()=>{getSpecificChat(conversationId)}}>
                 <p> Chat: {conversationId ? index:"New chat..."}</p>
 
-                    <p onClick={deleteChat} className={`delete-chat-button`}><i className="fa-solid fa-trash-can"></i></p>
+                    <p onClick={deleteChat} className={`delete-chat-button`}>&times;</p>
 
-            </button>
+            </div>
 
 
 

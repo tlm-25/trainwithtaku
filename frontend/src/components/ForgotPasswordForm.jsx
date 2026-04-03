@@ -63,7 +63,7 @@ function ForgotPasswordForm(){
     return (
         <>
 
-        <form className="forgot-password-form" onSubmit={requestPasswordResetLink}>
+        <form className="password-reset" onSubmit={requestPasswordResetLink}>
             
             <p className="forgot-password-form-header">
                 Enter the email you used to create TWT Fitness account, then press <strong>'Send reset link.'</strong>   
