@@ -84,6 +84,13 @@ class UserSignUpForm(BaseModel):
     user_type:str
     confirm_password:str
 
+
+class UserResetPasswordForm(BaseModel):
+    token:str
+    new_password:str
+    confirm_new_password:str
+
+
 class UserLoginForm(BaseModel):
     email:str
     password:str

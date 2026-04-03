@@ -245,13 +245,15 @@ export default function Authentication (props) {
                                     ) : (
                                          <button className="authenticate-button" onClick={handleAuthenticate} disabled={isAuthenticating||password.length<1||!emailValid}><p>Login</p></button>
                                     )}
+                {!isRegistration && (
+                    <a href="/forgot-password" style={{fontSize: "1.1rem", color:"#f5c97d"}}>Forgot password?</a>
+                )}
                 <hr />
             <div className="register-content">
                 <p>{ isRegistration ? 'Already have an account?' : 'Don\'t have an account?' }</p>
                 {isRegistration ? (
                                      <button className="authenticate-button" onClick={() => setIsRegistration(false)} disabled={isAuthenticating}><p>Login</p></button>
-                                        ) : 
-                                        (
+                                        ) : (
                                         <button className="authenticate-button" onClick={() => setIsRegistration(true)} disabled={isAuthenticating}><p>Sign up</p></button>
                                         )}
                 
