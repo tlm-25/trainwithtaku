@@ -176,6 +176,10 @@ export function AuthProvider(props){
             setGlobalUser(null)
             setAccessToken(null)
 
+            //navigate back to  landing page after user signs out
+            navigate("/"); 
+
+
         }
 
 

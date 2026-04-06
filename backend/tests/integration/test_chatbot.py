@@ -121,7 +121,7 @@ async def test_stream_chatbot_response():
 
     with TestClient(app=app) as client:
 
-        user_query = "what is shoulder adduction?"
+        user_query = "Should I cut carbs to lose fat?"
 
         user_message = {'message':user_query,'timestamp':str(datetime.now()),'type':'user'}
 
@@ -164,8 +164,9 @@ async def test_stream_chatbot_response():
 
             
 
-        print(chunks)
-        assert all(isinstance(chunk,str) for chunk in chunks)
+            print(chunks)
+            assert all(isinstance(chunk,str) for chunk in chunks)
+            assert "__REFS__" in chunks[0]
 
 
 

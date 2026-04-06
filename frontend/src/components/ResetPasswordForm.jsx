@@ -11,6 +11,8 @@ function ResetPasswordForm(){
     // get the 'token?=' portion of the url for the password reset
     const resetToken = searchParams.get("token")
 
+    const navigate = useNavigate()
+
 
 
 
@@ -94,8 +96,13 @@ function ResetPasswordForm(){
         const data = await response.json()
 
         if (response.ok){
+            //display success message
             toast.success('password successfully reset')
+            setNewPasswordInput("")
+            setConfirmNewPasswordInput("")
+
             //redirect to homepage
+            navigate("/")
             
         }
         else if (response.status==401){
@@ -135,8 +142,8 @@ function ResetPasswordForm(){
             </p>
             <p >IMPORTANT: The link expires after 20mins. Also, If you have any previous reset links, they will no longer work. Use the latest link.</p>
 
-            <input type="password" placeholder="Enter your new password" onChange={handleNewPasswordInputChange}/>
-            <input type="password" placeholder="confirm your new password" onChange={handleConfirmNewPasswordInputChange}/>
+            <input type="password" value={newPasswordInput} placeholder="Enter your new password" onChange={handleNewPasswordInputChange}/>
+            <input type="password" value={confirmNewPasswordInput} placeholder="confirm your new password" onChange={handleConfirmNewPasswordInputChange}/>
             <button type="submit" disabled={!passwordValid} className="reset-password-button">Reset password</button>
         </form>
             

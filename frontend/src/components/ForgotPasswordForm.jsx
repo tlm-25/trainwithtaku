@@ -48,9 +48,11 @@ function ForgotPasswordForm(){
         if (response.ok){
                        
             toast.success(message);
+            setEmailInput("");
         }
         else {
-            toast.error(message)
+            toast.error(message);
+            setEmailInput("");
         }
         
 
@@ -76,7 +78,7 @@ function ForgotPasswordForm(){
             </p>
             <p >IMPORTANT: The link expires after 20mins. Also, If you have any previous reset links, they will no longer work. Use the latest link.</p>
             {!emailValid&&<p className="forgot-password-form-header">EMAIL ADDRESS MUST BE VALID FORMAT </p>}
-            <input onChange={handleEmailInputCHange} type="text" placeholder="Enter your email address"/>
+            <input onChange={handleEmailInputCHange} value={emailInput} type="text" placeholder="Enter your email address"/>
             
             <button type="submit"  className="reset-password-button" disabled={!emailValid}>Send reset link</button>
 

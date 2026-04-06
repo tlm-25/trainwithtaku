@@ -4,6 +4,7 @@ import StoredChat from './StoredChat';
 import { getAllStoredChats } from '../../utils';
 import { useAuth } from '../../context/AuthContext';
 import {toast} from 'react-hot-toast'
+import SourcesModal from './SourcesDisplayModal';
 import ReactMarkdown from 'react-markdown'
 function ChatWindow() {
 
@@ -19,6 +20,8 @@ function ChatWindow() {
     const [currentChatID,setCurrentChatID] = useState(null)
     //check if user is currently creating a chat or not
     const [creatingChat, setCreatingChat] = useState(false)
+
+    const [showSourcesModal,setShowSourcesModal] = useState(false)
 
     const currentChatIDRef = useRef(null)
 
@@ -43,6 +46,8 @@ function ChatWindow() {
 
     const {globalUser,logout,fetchWithAuth} = useAuth()
     const [sidebarOpen, setSidebarOpen] = useState(false)
+
+    const [messageSources,setMessageSources] = useState([])
     // Load chat history for current selected chat
     useEffect(() => {
 
@@ -60,6 +65,17 @@ function ChatWindow() {
         
 
     },[])
+
+
+    async function handleShowSources (sources) {
+
+        // handle showing the references
+
+        setShowSourcesModal(true); 
+        setMessageSources(sources)
+
+
+    }
 
 
     
@@ -301,8 +317,14 @@ function ChatWindow() {
                         const chunkValue = decoder.decode(value,{stream: true})
 
                         
-                        //update the streamed text reference
+                        /*update the streamed text reference - only if the chunk value does not include the __REFS__ flag (which indicates that the chunk is the retrieved documents reference text, not part of the chatbot answer)
+                        Everything after the __REFS__ is refernce text, and exists in a seperate chunk from the chatbot answer
+                        
+                        
+                        */
+                        if(!chunkValue.includes("__REFS__")){
                         streamedTextRef.current += chunkValue
+                        //update chatlog with new streamed text - update the last message
                         //update the chatlog
                         setChatLog((prev)=>{
                             
@@ -329,7 +351,31 @@ function ChatWindow() {
                             return updatedChatlog
 
                             
-                        });
+                            });
+
+                        }
+
+                        else {
+                            //Once the chatbot has finished streaming its answer
+
+                            //if chunk includes "__REFS__" string, this means the chunk is the retrieved documenets reference and not part of the chatbot answer
+                            const stringFormattedDocuments = chunkValue.split("__REFS__")[1]
+                            // console.log(stringFormattedDocuments)
+
+                            setChatLog((prev)=>{
+                                const updatedChatlog = [...prev]
+                                const latestMessage = updatedChatlog[updatedChatlog.length - 1]
+                                if(latestMessage.type === 'bot'){
+                                    updatedChatlog[updatedChatlog.length - 1] = {
+                                        ...latestMessage,
+                                        sources: stringFormattedDocuments
+                                    }
+                                }
+                                return updatedChatlog
+                            })
+
+                        }
+                        
 
                     }
 
@@ -430,6 +476,7 @@ function ChatWindow() {
     return (
 
             <div className='main-chatbot-container'>
+                <SourcesModal showSourcesModal={showSourcesModal} setShowSourcesModalFunction={setShowSourcesModal} sourcesForCurrentMessage={messageSources}/>
                 <button className="hamburger-button" onClick={() => setSidebarOpen(!sidebarOpen)}>
                     {sidebarOpen ? '✕' : '☰'}
                 </button>
@@ -461,6 +508,12 @@ function ChatWindow() {
                                 </div>
 
                                 {<p className='message-timestamp'>{String(message.timestamp).substring(8,10)+ "/"+ String(message.timestamp).substring(5,7)+"/"+String(message.timestamp).substring(0,4)+" "+String(message.timestamp).substring(11,16)}</p> } 
+                                {/** If the message is from the chatbot (excluding initial greeting)*/}
+                                {(message.type == 'bot' && message.message !=="" && !loading && index > 0)&&(
+                                    <button className='show-sources-button' onClick={()=>{handleShowSources(message.sources)}}>View Sources</button>
+
+
+                                )}
         
                             </div>
                         
