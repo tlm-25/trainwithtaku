@@ -47,7 +47,7 @@ function ChatWindow() {
     const {globalUser,logout,fetchWithAuth} = useAuth()
     const [sidebarOpen, setSidebarOpen] = useState(false)
 
-    const [messageSources,setMessageSources] = useState([])
+    const [messageSources,setMessageSources] = useState("")
     // Load chat history for current selected chat
     useEffect(() => {
 
@@ -73,6 +73,7 @@ function ChatWindow() {
 
         setShowSourcesModal(true); 
         setMessageSources(sources)
+
 
 
     }
@@ -323,27 +324,27 @@ function ChatWindow() {
                         
                         */
                         if(!chunkValue.includes("__REFS__")){
-                        streamedTextRef.current += chunkValue
-                        //update chatlog with new streamed text - update the last message
-                        //update the chatlog
-                        setChatLog((prev)=>{
-                            
-                            //creating shallow copy of chat log - avoid mutating state directly for non-primitive typ
-                            const updatedChatlog = [...prev]
+                            streamedTextRef.current += chunkValue
+                            //update chatlog with new streamed text - update the last message
+                            //update the chatlog
+                            setChatLog((prev)=>{
+                                
+                                //creating shallow copy of chat log - avoid mutating state directly for non-primitive typ
+                                const updatedChatlog = [...prev]
 
-                            //get the latest entry of the chat log (will have the blank text)
-                            const latestMessage = updatedChatlog[updatedChatlog.length - 1]
+                                //get the latest entry of the chat log (will have the blank text)
+                                const latestMessage = updatedChatlog[updatedChatlog.length - 1]
 
-                            //update the last entry with the streamed text
-                            if(latestMessage.type === 'bot'){
+                                //update the last entry with the streamed text
+                                if(latestMessage.type === 'bot'){
 
-                                //filling in  the empty string with the text retrieved from the front end
-                                updatedChatlog[updatedChatlog.length - 1] = {
-                                    ...latestMessage,
-                                    message: streamedTextRef.current
+                                    //filling in  the empty string with the text retrieved from the front end
+                                    updatedChatlog[updatedChatlog.length - 1] = {
+                                        ...latestMessage,
+                                        message: streamedTextRef.current
+                                    }
+
                                 }
-
-                            }
 
                             
                             
@@ -368,7 +369,7 @@ function ChatWindow() {
                                 if(latestMessage.type === 'bot'){
                                     updatedChatlog[updatedChatlog.length - 1] = {
                                         ...latestMessage,
-                                        sources: stringFormattedDocuments
+                                        reference_docs: stringFormattedDocuments
                                     }
                                 }
                                 return updatedChatlog
@@ -510,7 +511,7 @@ function ChatWindow() {
                                 {<p className='message-timestamp'>{String(message.timestamp).substring(8,10)+ "/"+ String(message.timestamp).substring(5,7)+"/"+String(message.timestamp).substring(0,4)+" "+String(message.timestamp).substring(11,16)}</p> } 
                                 {/** If the message is from the chatbot (excluding initial greeting)*/}
                                 {(message.type == 'bot' && message.message !=="" && !loading && index > 0)&&(
-                                    <button className='show-sources-button' onClick={()=>{handleShowSources(message.sources)}}>View Sources</button>
+                                    <button className='show-sources-button' onClick={()=>{handleShowSources(message.reference_docs)}}>View Sources</button>
 
 
                                 )}

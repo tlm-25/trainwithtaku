@@ -6,7 +6,7 @@ function SourcesModal(props){
 
     const {showSourcesModal, setShowSourcesModalFunction, sourcesForCurrentMessage} = props
             function handleCloseModal(){
-            setShowModal(false)
+            setShowSourcesModalFunction(false)
         }
     
 
@@ -16,7 +16,7 @@ function SourcesModal(props){
         <>
         <Modal showModal={showSourcesModal}  handleCloseModal={()=>setShowSourcesModalFunction(false)}>
 
-            <SourcesDisplayContent sourcesForCurrentMessage={sourcesForCurrentMessage}/>     
+            <SourcesDisplayContent sourcesForCurrentMessage={sourcesForCurrentMessage} handleCloseModal={handleCloseModal}/>     
         </Modal>
         
         </>

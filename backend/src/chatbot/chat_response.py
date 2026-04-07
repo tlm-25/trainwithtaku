@@ -93,8 +93,8 @@ async def stream_chatbot_response(user_query:str,chat_history:list[dict],vector_
     references_json = json.dumps(references)
 
     string_formatted_documents = format_documents_for_prompt(documents=retrieved_documents)
-    print(string_formatted_documents)
-    logging.info(string_formatted_documents)
+    
+    logging.info(f"Retrieved Documents: {string_formatted_documents}")
     
 
     chat_prompt = ChatPromptTemplate.from_messages([("system",TRAINING_PROGRAM_PROMPT_CONCISE)])
@@ -132,7 +132,7 @@ async def stream_chatbot_response(user_query:str,chat_history:list[dict],vector_
     yield f"__REFS__{string_formatted_documents}"
      # store the chatbot response in the database once generated 
 
-    final_generated_message = ChatMessage(message=accumulated_text,timestamp=str(datetime.now()),type='bot')
+    final_generated_message = ChatMessage(message=accumulated_text,timestamp=str(datetime.now()),type='bot',reference_docs=string_formatted_documents)
    
     add_message_to_db = await conversation_collection.update_one(
             {"conversation_id": conversation_id},
