@@ -15,6 +15,7 @@ from src.prompts import TRAINING_PROGRAM_PROMPT_CONCISE
 from langchain_core.prompts.chat import ChatPromptTemplate
 
 from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI 
 from langchain_core.messages import  HumanMessage
 from pymongo.asynchronous.collection import AsyncCollection
 
@@ -25,6 +26,8 @@ CHAT_MODEL = ChatOpenAI(
     temperature=0.1
 
 )
+
+# General LLM Wrapper Class 
 
 
 TRAINING_RETRIEVAL_QUERY_TEMPLATE = """
