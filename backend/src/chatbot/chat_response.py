@@ -20,10 +20,12 @@ from langchain_core.messages import  HumanMessage
 from pymongo.asynchronous.collection import AsyncCollection
 
 from datetime import datetime
+
+
 CHAT_MODEL = ChatOpenAI(
     model=LLM_VERSION,
     openai_api_key=OPENAI_API_KEY,
-    temperature=0.1
+    temperature=0
 
 )
 
