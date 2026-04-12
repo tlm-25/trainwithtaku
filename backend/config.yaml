@@ -29,7 +29,9 @@ chatbot:
   top_k: 5
   embedding_model_name: text-embedding-3-large
   llm_version: gpt-4o-mini
-  output_token_limit: 2000
+  output_token_limit: 1000
+  max_n_messages_in_history: 8
+
 
 auth:
   access_token_expire_minutes: 15

@@ -68,6 +68,7 @@ class MonyaiChatbotConfig(BaseModel):
     top_k:int
     test_conversation_id:str
     output_token_limit:int
+    max_n_messages_in_history:int
 
 class AuthTokenConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
