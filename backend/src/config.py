@@ -165,6 +165,7 @@ def load_config_from_yaml(yaml_config_path:str)->ProjectConfig:
     redis_host = config_dict["redis_config"]["host"]
     redis_port = config_dict["redis_config"]["port"] 
 
+    # construct connection string
     redis_connection_string = f"redis://default:{REDIS_PASSWORD}@{redis_host}:{redis_port}"
 
     config_dict["redis_config"]["redis_connection_string"] = redis_connection_string
