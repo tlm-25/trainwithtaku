@@ -1,6 +1,6 @@
 
 from src.config import APP_CONFIG
-JWT_SECRET_KEY = APP_CONFIG.auth.jwt_secret_key
+JWT_SECRET_KEY = APP_CONFIG.auth.jwt_secret_key.get_secret_value()
 ACCESS_TOKEN_EXPIRE_MINUTES = APP_CONFIG.auth.access_token_expire_minutes
 JWT_ALGORITHM = APP_CONFIG.auth.jwt_algorithm
 USER_ACCOUNTS_COLLECTION_NAME = APP_CONFIG.database.user_accounts_collection_name

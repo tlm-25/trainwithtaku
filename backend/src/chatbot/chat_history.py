@@ -11,7 +11,7 @@ from src.prompts import SUMMARISE_CHAT_HISTORY_PROMPT
 
 CHAT_MODEL = ChatOpenAI(
     model=config.chatbot.llm_version,
-    openai_api_key=config.chatbot.openai_api_key,
+    openai_api_key=config.chatbot.openai_api_key.get_secret_value(),
     temperature=0
 
 )

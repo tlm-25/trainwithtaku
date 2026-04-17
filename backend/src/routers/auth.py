@@ -24,8 +24,8 @@ from fastapi import Depends, HTTPException, Request, BackgroundTasks, APIRouter
 from fastapi.responses import JSONResponse
 
 from fastapi.security import OAuth2PasswordRequestForm
-
-
+#rate limiting
+from src.rate_limiter import limiter
 #Context management
 from contextlib import asynccontextmanager
 import uuid
@@ -48,13 +48,14 @@ from src.email_utils.sender import WELCOME_EMAIL_FILE_NAME, send_email
 RESET_PASSWORD_EMAIL_FILE_NAME = "reset_password.html"
 
 
-
-
 router = APIRouter()
+
+router.startup()
 
 #create user
 @router.post("/add_user")
-async def add_user(user_sign_up_form:UserSignUpForm,background_tasks:BackgroundTasks,database:AsyncDatabase=Depends(create_or_get_database))->JSONResponse:
+@limiter.limit("5/minute")
+async def add_user(request:Request,user_sign_up_form:UserSignUpForm,background_tasks:BackgroundTasks,database:AsyncDatabase=Depends(create_or_get_database))->JSONResponse:
     '''
         Add new user to the database 
 
@@ -122,7 +123,8 @@ async def add_user(user_sign_up_form:UserSignUpForm,background_tasks:BackgroundT
         return JSONResponse(content={"message":f"{form_submit_message}"},status_code=200)
 
 @router.post("/login_with_access_token")
-async def login_with_access_token(database:AsyncDatabase=Depends(create_or_get_database),form_data: OAuth2PasswordRequestForm = Depends())->JSONResponse:
+@limiter.limit("10/minute")
+async def login_with_access_token(request:Request,database:AsyncDatabase=Depends(create_or_get_database),form_data: OAuth2PasswordRequestForm = Depends())->JSONResponse:
     '''
     This endpoint authenticates the user using username and password, sets the refresh token, stores it in the cookie, and returns an access token in the response body
     
@@ -338,7 +340,8 @@ async def logout(request:Request,database:AsyncDatabase=Depends(create_or_get_da
 
 
 @router.post("/send_change_password_link")
-async def send_change_password_link(user_email:UserEmail, background_tasks:BackgroundTasks, database=Depends(create_or_get_database)):
+@limiter.limit("5/minute")
+async def send_change_password_link(request:Request, user_email:UserEmail, background_tasks:BackgroundTasks, database=Depends(create_or_get_database)):
     '''
         Endpoint to send a link to user's email if they need to change their password. Note that this endpoint does NOT
         reset the password, but it sends a link to a user's email address if they have a registered account,
@@ -372,7 +375,8 @@ async def send_change_password_link(user_email:UserEmail, background_tasks:Backg
 
   
 @router.post("/reset_password")
-async def reset_password(reset_password_form:UserResetPasswordForm,database=Depends(create_or_get_database)):
+@limiter.limit("5/minute")
+async def reset_password(request:Request, reset_password_form:UserResetPasswordForm,database=Depends(create_or_get_database)):
 
     '''
         Reset user password 

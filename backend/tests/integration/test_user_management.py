@@ -1,16 +1,16 @@
 
-from src.main import app
+from src.main import app, limiter
 from src.schemas import UserSignUpForm, UserResetPasswordForm
 from src.database.connection import create_or_get_database
 from src.database.user_management.utils import check_if_email_already_in_use
 from src.database.user_management.password import hash_password, is_correct_password
 from src.config import APP_CONFIG
 
-MONGO_DB_CONNECTION_STRING = APP_CONFIG.database.mongo_db_connection_string
+MONGO_DB_CONNECTION_STRING = APP_CONFIG.database.mongo_db_connection_string.get_secret_value()
 TEST_DATABASE_NAME  = APP_CONFIG.database.test_database_name
 USER_ACCOUNTS_COLLECTION_NAME = APP_CONFIG.database.user_accounts_collection_name
 TEST_USER_EMAIL = APP_CONFIG.email.test_user_email
-TEST_USER_PASSWORD = APP_CONFIG.email.test_user_password
+TEST_USER_PASSWORD = APP_CONFIG.email.test_user_password.get_secret_value()
 PASSWORD_RESET_COLLECTION_NAME = APP_CONFIG.database.password_reset_collection_name
 PASSWORD_RESET_MINUTES = APP_CONFIG.auth.reset_password_link_expire_minutes
 
@@ -24,6 +24,8 @@ import pytest, pytest_asyncio
 
 from datetime import datetime 
 import uuid
+
+
 async def create_or_get_test_database():
     '''
     Database for testing only
@@ -39,6 +41,9 @@ async def create_or_get_test_database():
 
 
 client = TestClient(app=app)
+
+# disable rate limiting does not affect testing functionality unless explicity testing rate limiting
+limiter.enabled = False
 
 app.dependency_overrides[create_or_get_database] = create_or_get_test_database
 
@@ -347,3 +352,5 @@ async def test_expired_reset_password_token():
     finally:
         # clean up database after test (remove the dummy entry)
         await reset_collection.delete_one({"token": dummy_token})
+
+

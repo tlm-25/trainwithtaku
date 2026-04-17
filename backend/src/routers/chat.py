@@ -7,9 +7,9 @@ from src.database.user_management.jwt_token import get_current_user
 
 from pymongo.asynchronous.database import AsyncDatabase
 
-from fastapi import  APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse,  JSONResponse
-
+from src.rate_limiter import limiter
 
 import uuid
 import logging
@@ -55,7 +55,8 @@ async def get_chat_history(chat_request:ChatHistoryRequest,current_user:dict =De
         return JSONResponse(content={"message":message}, status_code=500)
 
 @router.post("/chat")
-async def generate_chatbot_response(chat_request:ChatRequest,database:AsyncDatabase=Depends(create_or_get_database)):
+@limiter.limit("10/minute")
+async def generate_chatbot_response(request:Request, chat_request:ChatRequest,database:AsyncDatabase=Depends(create_or_get_database)):
     '''
     :param chat_request
     :type chat_request ChatRequest 

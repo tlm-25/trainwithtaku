@@ -41,3 +41,10 @@ auth:
 domain:
   frontend_domain_dev: http://localhost:5173
   frontend_domain_prod: trainwithtaku.com
+
+redis_config:
+  host: redis-10505.crce287.eu-west-2-2.ec2.cloud.redislabs.com
+  port: 10505
+  database_name: trainwithtaku-redis-db
+
+

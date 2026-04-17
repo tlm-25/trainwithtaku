@@ -9,11 +9,13 @@ from contextlib import asynccontextmanager
 
 import logging
 
-#configuration for logging file
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from src.routers import auth, chat
+from src.rate_limiter import limiter
 
-app = FastAPI()
+app = FastAPI(title="Train with Taku API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -23,7 +25,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # logging/printing any missing fields in pydantic validation errors
 @app.exception_handler(RequestValidationError)

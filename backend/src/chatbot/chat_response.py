@@ -4,7 +4,7 @@ from src.config import APP_CONFIG
 import json
 import logging
 LLM_VERSION = APP_CONFIG.chatbot.llm_version
-OPENAI_API_KEY = APP_CONFIG.chatbot.openai_api_key
+OPENAI_API_KEY = APP_CONFIG.chatbot.openai_api_key.get_secret_value()
 VECTOR_STORE_COLLECTION_NAME = APP_CONFIG.database.vector_store_collection_name
 MONGO_VECTOR_INDEX_NAME = APP_CONFIG.database.mongo_vector_index_name
 CHAT_COLLECTION_NAME = APP_CONFIG.database.chat_collection_name
