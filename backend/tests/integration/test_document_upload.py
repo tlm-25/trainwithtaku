@@ -30,6 +30,7 @@ async def create_or_get_test_database():
 
 
 @pytest.mark.asyncio
+@pytest.mark.slow
 async def test_succesful_document_upload_web():
     
     test_mongo_database = await create_or_get_test_database().__anext__()
@@ -45,6 +46,7 @@ async def test_succesful_document_upload_web():
     assert new_collection_length > original_collection_length
 
 @pytest.mark.asyncio
+@pytest.mark.slow
 async def test_succesful_document_upload_pdf():
     
     test_mongo_database = await create_or_get_test_database().__anext__()

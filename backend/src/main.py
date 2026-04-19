@@ -26,7 +26,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.state.limiter = limiter
+
+
+
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+
 
 # logging/printing any missing fields in pydantic validation errors
 @app.exception_handler(RequestValidationError)

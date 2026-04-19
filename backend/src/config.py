@@ -15,6 +15,7 @@ YAML_CONFIG_PATH = "config.yaml"
 # secrets injected into APP_CONFIG from env variables at load time  
 MONGO_DB_CONNECTION_STRING = os.getenv("MONGO_DB_CONNECTION_STRING")
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+TEST_REDIS_PASSWORD = os.getenv("TEST_REDIS_PASSWORD")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
@@ -91,10 +92,14 @@ class DomainConfig(BaseModel):
     frontend_domain_prod:str
 
 class RedisConfig(BaseModel):
+    model_config = ConfigDict(frozen=True)
     redis_connection_string:SecretStr
+    test_redis_connection_string:SecretStr
     host:str
     port:int
     database_name:str
+
+
 
 
 
@@ -163,18 +168,30 @@ def load_config_from_yaml(yaml_config_path:str)->ProjectConfig:
 
     # get redis databse details 
     redis_host = config_dict["redis_config"]["host"]
+    test_redis_host = config_dict["redis_config"]["test_host"]
+   
     redis_port = config_dict["redis_config"]["port"] 
+    test_redis_port = config_dict["redis_config"]["test_port"] 
+    
+    
 
+ 
     # construct connection string
     redis_connection_string = f"redis://default:{REDIS_PASSWORD}@{redis_host}:{redis_port}"
 
+    
     config_dict["redis_config"]["redis_connection_string"] = redis_connection_string
+
+    # construct connection string for the test database
+    test_redis_connection_string = f"redis://default:{TEST_REDIS_PASSWORD}@{test_redis_host}:{test_redis_port}"
+
+    config_dict["redis_config"]["test_redis_connection_string"] = test_redis_connection_string
 
     return ProjectConfig(**config_dict)
 
     
 # load config settings to use in app    
-APP_CONFIG = load_config_from_yaml(YAML_CONFIG_PATH)
+APP_CONFIG = load_config_from_yaml(YAML_CONFIG_PATH)  
 
 
 

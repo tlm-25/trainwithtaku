@@ -6,6 +6,7 @@ from langchain.schema import Document
 import pytest
 
 @pytest.mark.asyncio
+@pytest.mark.slow
 async def test_success_generate_web_docs():
     '''
         Test for successful generation of documents from a web page
