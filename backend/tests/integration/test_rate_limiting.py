@@ -1,88 +1,77 @@
 import pytest
-import pytest_asyncio
 from fastapi.testclient import TestClient
-from slowapi import Limiter
+
 
 from src.config import APP_CONFIG
-from src.rate_limiter import get_real_ip
+
 import redis
 import uuid
-import src.routers.auth as auth_router
-from src.main import app
-from src.rate_limiter import limiter
+
+# from src.rate_limiter import limiter
+
+from src.app_setup import create_app
 import logging
+
 TEST_USER_EMAIL = APP_CONFIG.email.test_user_email
 TEST_USER_PASSWORD = APP_CONFIG.email.test_user_password.get_secret_value()
 
 REDIS_CONNECTION_STRING = APP_CONFIG.redis_config.redis_connection_string.get_secret_value()
-TEST_REDIS_CONNECTION_STRING = APP_CONFIG.redis_config.test_redis_connection_string.get_secret_value()
-
+TEST_REDIS_CONNECTION_STRING = None
 
 
 
 @pytest.fixture
-def setup_test_limiter():
+def test_client():
 
-    test_limiter = Limiter(key_func=get_real_ip, storage_uri=TEST_REDIS_CONNECTION_STRING)
+    # create test app
+    test_app =  create_app(redis_rl_storage_uri=TEST_REDIS_CONNECTION_STRING)
+    # create test client
+    test_client = TestClient(app=test_app)
 
-    # slowapi stores the limiter here — this is what's checked at request time
-    original_limiter = app.state.limiter
-    app.state.limiter = test_limiter
+    logging.info("Created test database")
+   
+    yield test_client
 
-    # also swap the module ref for completeness
-    original_router_limiter = auth_router.limiter
-    auth_router.limiter = test_limiter
+    # No flush 
 
-    yield
-
-    app.state.limiter = original_limiter
-    auth_router.limiter = original_router_limiter
-
-
-@pytest.fixture
-def flush_test_database(setup_test_limiter):
-    '''Connect to the test redis database to test rate limiting'''
-
-    redis_client = redis.from_url(url=TEST_REDIS_CONNECTION_STRING)
-    print(redis_client.keys("*"))
-    #clear test database from previous tests 
-    redis_client.flushdb()
-    print(redis_client.keys("*"))
-    logging.info("test redis database flushed")
-    print("flushed")
-    yield
-    # clear database after test 
-    redis_client.flushdb()
-    print(redis_client.keys("*"))
-    print("flushed")
-
+    logging.info("Flushed test database")
 
 
 
 @pytest.mark.asyncio
 @pytest.mark.slow
-async def test_incorrect_login_rate_limit(flush_test_database):
+async def test_incorrect_login_rate_limit(test_client):
     '''
-        Simulate brute force attack where somebody tried to guess password 
+        Simulate brute force attack where an attacker is trying to guess a password
         Return 401 error for the first 10
         When the 11th attempt is made within a minute, a 429 error should be returned 
+        
+        If on windows, ensure that focker desktop is open and you are logged in. Docker will be needed 
+        to spim u hte local redis server for this test 
+        
+        Ensure thethe local redis instance is running 
+        to turn on local redis server run "docker run -d -p 6379:6379 --name some-redis redis" 
+    
     '''
 
-    with TestClient(app=app) as client:
-        # first 10 login attemps (incorrect password)
-        for i in range(0,10):
 
-            print (f"attempt {i}")
-            
+    # first 10 login attemps (incorrect password)
+    for i in range(0,10):
 
-            password_guess = str(uuid.uuid4())
-            response = client.post("/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":password_guess})
-         
-            assert response.status_code == 401
+        print (f"attempt {i}")
+        
 
-        #ensure a 429 error code is returned with rate limit in reached
-        response = client.post("/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":password_guess})
-        assert response.status_code== 429
+        password_guess = str(uuid.uuid4())
+        response = test_client.post("/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":password_guess})
+    
+        assert response.status_code == 401
+
+    #ensure a 429 error code is returned with rate limit in reached and expected error message
+    response = test_client.post("/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":password_guess})
+    message = response.json()["message"].lower()
+    logging.info(f"message: {message}")
+    assert response.status_code== 429
+    assert "too many login attempts." in message
     
 
 

@@ -9,6 +9,7 @@ config = APP_CONFIG
 
 
 @pytest.mark.asyncio
+@pytest.mark.llm_call
 async def test_summarise_old_chat_history():
     '''
         Test summarisation of old chat history when chat history exceeds max number of messages to include in context 

@@ -2,7 +2,8 @@ from src.database.connection import get_mongo_client, create_or_get_database, cr
 from src.chatbot.chat_history import get_all_stored_user_chats
 from src.chatbot.chat_response import stream_chatbot_response
 from src.schemas import  ClientForm
-from src.main import app
+# from src.main import app
+from src.app_setup import create_app
 
 from src.config import APP_CONFIG
 
@@ -24,6 +25,9 @@ from datetime import datetime
 import pytest
 import uuid
 
+
+
+
 async def create_or_get_test_database():
     '''
     Database for testing only
@@ -33,9 +37,11 @@ async def create_or_get_test_database():
         database = mongo_client[TEST_DATABASE_NAME]
         yield database
     
+test_app = create_app()
+test_app.state.limiter.enabled = False
 
+test_app.dependency_overrides[create_or_get_database] = create_or_get_test_database
 
-app.dependency_overrides[create_or_get_database] = create_or_get_test_database
 
 
 @pytest.mark.asyncio
@@ -45,7 +51,7 @@ async def test_user_chats_retrieval():
         Assumes there is pre-existing chat data for the test user
     '''
 
-    with TestClient(app=app) as client:
+    with TestClient(app=test_app) as client:
         # First, login to get a valid access token
         login_response = client.post(url="/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":TEST_USER_PASSWORD})
         login_response_json = login_response.json()
@@ -69,7 +75,7 @@ async def test_get_specific_stored_chat():
         Assumes there is pre-existing chat data for the test user
     '''
 
-    with TestClient(app=app) as client:
+    with TestClient(app=test_app) as client:
         # Test credentials for existing user in test database
 
         # First, login to get a valid access token
@@ -90,7 +96,7 @@ async def test_create_new_chat():
     '''
         test successful creation of new chat
     '''
-    with TestClient(app=app) as client:
+    with TestClient(app=test_app) as client:
         test_email = TEST_USER_EMAIL
         password = TEST_USER_PASSWORD
         # First, login to get a valid access token
@@ -113,13 +119,14 @@ async def test_create_new_chat():
 
 
 @pytest.mark.asyncio
+@pytest.mark.llm_call
 async def test_stream_chatbot_response():
     '''
         Test that chatbot gives appropriate response
     
     '''
 
-    with TestClient(app=app) as client:
+    with TestClient(app=test_app) as client:
 
         user_query = "Should I cut carbs to lose fat?"
 

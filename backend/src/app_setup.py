@@ -1,0 +1,51 @@
+from fastapi import FastAPI, Request, APIRouter
+from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
+from slowapi import Limiter
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
+from pydantic import SecretStr
+from fastapi.middleware.cors import CORSMiddleware
+from src.routers.auth import create_auth_router
+from src.routers.chat import create_chat_router
+# from src.routers import chat
+from src.rate_limiter import create_rate_limiter, custom_rate_limit_handler
+from datetime import datetime
+import logging
+
+
+
+def create_app(redis_rl_storage_uri:str|SecretStr|None=None)->FastAPI:
+    '''
+    Create FastAPI app instance with configured redis rate limiter 
+    Defaults to in memory if not set
+    Using factory pattern to create fastapi app instance configured with 
+    specific redis uri (makes testing rate limits easier)
+    
+    :param redis_rl_storage_uri: storage uri for redis database
+    
+    '''
+    app = FastAPI()
+    rate_limiter = create_rate_limiter(storage_uri=redis_rl_storage_uri)
+    
+    auth_router = create_auth_router(limiter=rate_limiter)
+    chat_router = create_chat_router(limiter=rate_limiter)
+
+    
+    app.state.limiter = rate_limiter
+
+    app.add_middleware(
+    CORSMiddleware,
+
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    )
+
+    app.add_exception_handler(RateLimitExceeded, custom_rate_limit_handler)
+    app.include_router(auth_router,tags=["auth"])
+    app.include_router(chat_router,tags=["chat"])
+    
+    return app

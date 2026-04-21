@@ -4,7 +4,8 @@ from email.message import EmailMessage
 import pytest
 import logging
 from src.config import APP_CONFIG
-from src.main import app
+# from src.main import app
+from src.app_setup import create_app
 from fastapi.testclient import TestClient
 EMAIL_CONFIG = APP_CONFIG.email
 
@@ -17,7 +18,12 @@ test_subject = "Welcome"
 test_message = "Welcome to TWT Fitness"
 test_non_existent_file_path = HTML_TEMPLATE_FOLDER_PATH+ "/" +"non_existent"
 
+test_app = create_app()
+# disable rate limiting so that it does not affect testing functionality unless 
+#... only skip this line in tests if explicity testing rate limiting
+test_app.state.limiter.enabled = False
 
+client = TestClient(app=test_app)
 
 @pytest.mark.asyncio
 async def test_create_message_html_only_success():
@@ -74,7 +80,7 @@ async def test_send_email():
 
 @pytest.mark.asyncio
 async def test_send_reset_password_link():
-    with TestClient(app=app) as client:
+    with TestClient(app=test_app) as client:
         # Deliberately do not login - accessed if user forgets password so they won't be logged in 
         # deliberately not handling non-existent emails so that we do not give attackers clues for accounts
         send_password_response= client.post(url="/send_change_password_link",json={"email":EMAIL_CONFIG.dev_email})

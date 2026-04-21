@@ -1,5 +1,6 @@
 
-from src.main import app, limiter
+
+from src.app_setup import create_app
 from src.schemas import UserSignUpForm, UserResetPasswordForm
 from src.database.connection import create_or_get_database
 from src.database.user_management.utils import check_if_email_already_in_use
@@ -13,6 +14,7 @@ TEST_USER_EMAIL = APP_CONFIG.email.test_user_email
 TEST_USER_PASSWORD = APP_CONFIG.email.test_user_password.get_secret_value()
 PASSWORD_RESET_COLLECTION_NAME = APP_CONFIG.database.password_reset_collection_name
 PASSWORD_RESET_MINUTES = APP_CONFIG.auth.reset_password_link_expire_minutes
+
 
 
 from pymongo import AsyncMongoClient
@@ -39,23 +41,20 @@ async def create_or_get_test_database():
           raise RuntimeError(f"failed to connect to database {TEST_DATABASE_NAME}: {e}")
 
 
+test_app = create_app()
+# disable rate limiting so that it does not affect testing functionality unless 
+#... only skip this line in tests if explicity testing rate limiting
+test_app.state.limiter.enabled = False
+test_app.dependency_overrides[create_or_get_database] = create_or_get_test_database
+client = TestClient(app=test_app)
 
-client = TestClient(app=app)
-
-# disable rate limiting does not affect testing functionality unless explicity testing rate limiting
-limiter.enabled = False
-
-app.dependency_overrides[create_or_get_database] = create_or_get_test_database
-
-
-
-     
+    
 @pytest.mark.asyncio
 async def test_successful_user_sign_up():
     '''
         Test successful user sign up with valid email and password'''
 
-    with TestClient(app=app) as client:
+    with TestClient(app=test_app) as client:
         email = f"test{str(uuid.uuid4())}@gmail.com"
         user_type = "trainee"
         test_user_details = UserSignUpForm(email=email,password=TEST_USER_PASSWORD,confirm_password=TEST_USER_PASSWORD,user_type=user_type)
@@ -70,7 +69,7 @@ async def test_password_confirm_pw_mismatch():
     '''
         Test scenario when password and confirm password fields are mismatched in user sign up'''
 
-    with TestClient(app=app) as client:
+    with TestClient(app=test_app) as client:
         email = f"test{str(uuid.uuid4())}@gmail.com"
         user_type = "trainee"
         test_user_details = UserSignUpForm(email=email,password=TEST_USER_PASSWORD,confirm_password="Password11!",user_type=user_type)
@@ -87,7 +86,7 @@ async def test_invalid_email_format_user_sign_up():
     '''
 
 
-    with TestClient(app=app) as client:
+    with TestClient(app=test_app) as client:
         email = f"test{str(uuid.uuid4())}gmail.com"
         user_type = "trainee"
         test_user_details = UserSignUpForm(email=email,password=TEST_USER_PASSWORD,confirm_password=TEST_USER_PASSWORD,user_type=user_type)
@@ -104,7 +103,7 @@ async def test_email_already_exists_sign_up():
     Test that we can correctly identify that an email is already in use - (created a document in collection to test). This test that assumes an email
     with the address 'existing_email@gmail.com' is in the 'user_accounts' collection within the test database
     '''
-    with TestClient(app=app) as client:
+    with TestClient(app=test_app) as client:
         user_type = "trainee"
         test_user_details = UserSignUpForm(email=TEST_USER_EMAIL,password=TEST_USER_PASSWORD,confirm_password=TEST_USER_PASSWORD,user_type=user_type)
         test_user_details_mock_json = test_user_details.model_dump()
@@ -119,7 +118,7 @@ async def test_successful_login_with_access_token():
     '''
     Test that a JWT token is generated on successful login and that the token has the correct structure
     '''
-    with TestClient(app=app) as client:
+    with TestClient(app=test_app) as client:
         existing_email = TEST_USER_EMAIL
         password = TEST_USER_PASSWORD
 
@@ -135,7 +134,7 @@ async def test_login_incorrect_email():
     '''
     Test edge case of incorrect email (username)
     ''' 
-    with TestClient(app=app) as client:
+    with TestClient(app=test_app) as client:
         # incorrect email for login - does not exist in the test database
         incorrect_email = "exist_email@gmail.com"
         response = client.post(url="/login_with_access_token",data={"username":incorrect_email,"password":TEST_USER_PASSWORD})
@@ -149,7 +148,7 @@ async def test_login_incorrect_password():
     Test edge case of incorrect password in login
 
     ''' 
-    with TestClient(app=app) as client:
+    with TestClient(app=test_app) as client:
         #incorrect password for the user in the test database
         incorrect_password = "incorrect_password"
         response = client.post(url="/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":incorrect_password})
@@ -162,7 +161,7 @@ async def test_get_current_user():
     '''
     Test that the current user is correctly retrieved from the database
     '''
-    with TestClient(app=app) as client:
+    with TestClient(app=test_app) as client:
         # First, login to get a valid access token
         login_response = client.post(url="/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":TEST_USER_PASSWORD})
         login_response_json = login_response.json()
@@ -182,7 +181,7 @@ async def test_new_refresh_token_is_useable():
     Test that the new access token returned by /refresh actually works on a
     protected endpoint (/me).
     '''
-    with TestClient(app=app) as client:
+    with TestClient(app=test_app) as client:
         
         login_response = client.post(
             url="/login_with_access_token",
@@ -209,7 +208,7 @@ async def test_refresh_without_cookie_returns_401():
     '''
     Test that /refresh returns 401 when no refresh token cookie is present.
     '''
-    with TestClient(app=app) as client:
+    with TestClient(app=test_app) as client:
         # Deliberately do not login — no cookie will be set
         refresh_response = client.post(url="/refresh")
         assert refresh_response.status_code == 401
@@ -221,7 +220,7 @@ async def test_refresh_with_invalid_cookie_returns_401():
     Test that /refresh returns 401 when the cookie contains a tampered or
     invalid token string.
     '''
-    with TestClient(app=app) as client:
+    with TestClient(app=test_app) as client:
         
 
         client.cookies.set("refresh_token", "this.is.not.a.valid.jwt")
@@ -236,7 +235,7 @@ async def test_logout_twice_still_returns_200():
     Test that calling /logout twice does not error — idempotent logout.
     Test that it allows logout even if refresh token already blacklisted
     '''
-    with TestClient(app=app) as client:
+    with TestClient(app=test_app) as client:
         client.post(
             url="/login_with_access_token",
             data={"username": TEST_USER_EMAIL, "password": TEST_USER_PASSWORD},
@@ -254,7 +253,7 @@ async def test_logout_without_cookie_still_returns_200():
     Test that /logout returns 200 even when no refresh token cookie is present
     — logout should never error, regardless of cookie state.
     '''
-    with TestClient(app=app) as client:
+    with TestClient(app=test_app) as client:
         # Deliberately do not login
         logout_response = client.post(url="/logout")
         assert logout_response.status_code == 200
@@ -325,7 +324,7 @@ async def test_expired_reset_password_token():
     '''
 
     try:
-        with TestClient(app=app) as client:
+        with TestClient(app=test_app) as client:
             dummy_token  =str(uuid.uuid4())
             dummy_password = "dummy_password"
 

@@ -45,9 +45,9 @@ domain:
 redis_config:
   host: redis-10505.crce287.eu-west-2-2.ec2.cloud.redislabs.com
   port: 10505
-  test_port: 17278
   database_name: trainwithtaku-redis-db
-  test_database_name: trainwithtaku-dev-redis-db
-  test_host: redis-17278.c338.eu-west-2-1.ec2.cloud.redislabs.com
+  local_redis_connection_string: "redis://localhost:6379"
+
+
 
 

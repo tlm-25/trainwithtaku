@@ -14,22 +14,24 @@ from slowapi.errors import RateLimitExceeded
 
 from src.routers import auth, chat
 from src.rate_limiter import limiter
+from src.config import APP_CONFIG
+from src.app_setup import create_app
 
-app = FastAPI(title="Train with Taku API")
+app = create_app(redis_rl_storage_uri=APP_CONFIG.redis_config.redis_connection_string)
 
-app.add_middleware(
-    CORSMiddleware,
+# app.add_middleware(
+#     CORSMiddleware,
 
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-app.state.limiter = limiter
+#     allow_origins=["http://localhost:5173"],
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
+# # app.state.limiter = limiter
 
 
 
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+# app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 
@@ -52,11 +54,5 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "missing_fields": missing_fields,
         },
     )
-
-
-app.include_router(auth.router,tags=["auth"])
-app.include_router(chat.router,tags=["chat"])
-        
-
 
 

@@ -142,6 +142,14 @@ export default function Authentication (props) {
                 }
 
 
+                else if (loginResponse.status === 429 || loginResponse.message.toLowerCase().includes("too many login attempts")){
+                    setLoginMessage("Too many login attempts. Please try again in 1 minute")
+                    toast.error("Too many login attempts. Please try again in 1 minute")
+
+
+                }
+
+
                 
          
 
@@ -173,6 +181,10 @@ export default function Authentication (props) {
                 <p className="auth-instruction-text"><strong>{ isRegistration ? 'All requirements must be met (✅)' : 'Sign into your account'}</strong></p>
                 {!isRegistration && loginMessage.toLowerCase().includes("incorrect") && (
                     <p className="auth-instruction-text">❌ Incorrect username or password - Please try again</p>
+                )}
+
+                {!isRegistration && loginMessage.toLowerCase().includes("too many") && (
+                    <p className="auth-instruction-text">❌ Too many login attempts. Please try again in 1 minute</p>
                 )}
                 
                 {isRegistration && (

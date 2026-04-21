@@ -1,5 +1,4 @@
 #Tests for uploading to vector store
-from src.main import app
 from src.database.connection import create_or_get_database
 # from src.config import VECTOR_STORE_COLLECTION_NAME, TEST_DATABASE_NAME, MONGO_DB_CONNECTION_STRING
 from src.database.vector_store import upload_to_vector_store, generate_documents
