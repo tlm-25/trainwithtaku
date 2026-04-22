@@ -137,7 +137,7 @@ def create_auth_router(limiter:Limiter)->APIRouter:
             return JSONResponse(content={"message":f"{form_submit_message}"},status_code=200)
 
     @router.post("/login_with_access_token")
-    @limiter.limit("10/5 minutes")
+    @limiter.limit("10/5minutes")
     async def login_with_access_token(request:Request,database:AsyncDatabase=Depends(create_or_get_database),form_data: OAuth2PasswordRequestForm = Depends())->JSONResponse:
         '''
         This endpoint authenticates the user using username and password, sets the refresh token, stores it in the cookie, and returns an access token in the response body

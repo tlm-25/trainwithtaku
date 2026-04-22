@@ -40,56 +40,66 @@ def create_rate_limiter(storage_uri: str | SecretStr | None = None) -> Limiter:
         return Limiter(key_func=get_real_ip, storage_uri=storage_uri, in_memory_fallback_enabled=True)
     return Limiter(key_func=get_real_ip, storage_uri=storage_uri.get_secret_value(), in_memory_fallback_enabled=True)
 
+
 async def custom_rate_limit_handler(request:Request,exc:RateLimitExceeded):
     now = datetime.now().timestamp()
+    # rate limit object from exception
+    limit = exc.limit.limit
+
+    # get the number of seconds in the time window
+    window_seconds = limit.multiples * limit.GRANULARITY.seconds
+
+
     # get the tiemstamp of the reset 
-    reset_timestamp = now + exc.limit.limit.GRANULARITY.seconds
+    reset_timestamp = now + window_seconds
+
+    if window_seconds < 60:
+        retry_message = f"in {window_seconds} seconds"
+    elif window_seconds < 3600:
+        retry_message = f"in {window_seconds//60} minute(s)"
+    else:
+        retry_message = f"in {window_seconds//3600} hours"
+
+
 
     reset_time = datetime.fromtimestamp(reset_timestamp).strftime("%H:%M")
 
     logging.info(f" RL reset timestamp: {reset_time}")
     
     # time left before they can make requests again
-    retry_after_s = int(reset_timestamp - datetime.now().timestamp()) if reset_timestamp else 60
+    retry_after_s = int(reset_timestamp - now) if reset_timestamp else 60
    
-    retry_after_minutes = max(1, retry_after_s // 60)
 
-    logging.info(f"Allowed to makes request again at {reset_timestamp}")
+    logging.info(f"Allowed to makes request again at {reset_time}")
     
     RATE_LIMIT_MESSAGES = {
-    "/login_with_access_token": f"Too many login attempts. Please try again in {retry_after_minutes} minutes ",
+    "/login_with_access_token": f"Too many login attempts. Please try again {retry_message} ",
     
-    "/add_user": f"Too many sign up attempts. Please try again at {reset_timestamp}",
+    "/add_user": f"Too many sign up attempts. Please try again {retry_message}",
     
-    f"/send_change_password_link": f"Too many password reset requests. Please try again at {reset_timestamp}",
+    f"/send_change_password_link": f"Too many password reset requests. Please try again {retry_message}",
     
-    "/reset_password": f"Too many password reset attempts. Please try again at {reset_timestamp}",
+    "/reset_password": f"Too many password reset attempts. Please try again {retry_message}",
     }
 
     rl_message = RATE_LIMIT_MESSAGES.get(request.url.path, "Too many requests. Please try again later")
-    logging.info(f"Rate limit message {rl_message}")
+    logging.info(f"Rate limit message: {rl_message}")
     
     return JSONResponse(
         status_code=429,
         content={
             "error": "rate_limit_exceeded",
             "message": rl_message,
-            "retry_after_seconds": retry_after_s,
-            "resets_at": datetime.fromtimestamp(reset_timestamp).strftime("%I:%M %p") if reset_timestamp else None,
+            "retry_after_seconds": window_seconds,
+            "resets_at": reset_timestamp if reset_timestamp else None,
         },
         headers={
-            "Retry-After": str(retry_after_s),
+            "Retry-After": str(window_seconds),
             "X-RateLimit-Limit": str(exc.limit.limit.amount),
             "X-RateLimit-Remaining": str(retry_after_s),
             "X-RateLimit-Reset": str(int(reset_timestamp)) if reset_timestamp else "",
         },
     )
-
-
-
-
-
-
 
 
 # TODO - handle load balancer and proxy ip so that limiter does not affect it 
