@@ -9,6 +9,12 @@ from slowapi.errors import RateLimitExceeded
 from pydantic import SecretStr
 from datetime import datetime
 import logging
+import jwt
+
+from src.config import APP_CONFIG as config
+
+JWT_SECRET_KEY = config.auth.jwt_secret_key.get_secret_value()
+JWT_ALGORITHM = config.auth.jwt_algorithm.get_secret_value()
 
 def get_real_ip(request: Request):
     '''
@@ -24,7 +30,31 @@ def get_real_ip(request: Request):
     return request.client.host
 
 
-def create_rate_limiter(storage_uri: str | SecretStr | None = None) -> Limiter:
+def get_user_id_from_token(request:Request) ->str:
+    '''
+    Get user id from the token 
+    :param request: The incoming request
+ 
+    '''
+    
+    # "Authorization" header has the JWT
+    auth_header = request.headers.get("Authorization","")
+
+    # assuming the user is logged in with JWT and the header with "Authorization": "Bearer <TOKEN>"
+
+    if auth_header.startswith("Bearer"):
+
+        jwt_token = auth_header[7:]
+
+        payload =  jwt.decode(jwt=jwt_token, key=JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        
+        # return user id 
+        return payload.get("sub")
+
+
+
+
+def create_rate_limiter(storage_uri: str | SecretStr | None = None,key:str="ip") -> Limiter:
     '''
     Create a SlowAPI Limiter instance keyed by real client IP.
 
@@ -32,12 +62,24 @@ def create_rate_limiter(storage_uri: str | SecretStr | None = None) -> Limiter:
     (e.g. production credentials), or None for in-memory storage (e.g. tests).
 
     :param storage_uri: Redis connection string, or None for in-memory.
+    :param key: Chosen key used to enforce rate limit. The options are 'ip' for ip address, and 'user' for user account
     :return: Configured Limiter instance.
     '''
+    key_func_options = ["ip","user"]
+    
+    if not key.lower() in key_func_options:
+        raise ValueError(f"'{key}' is not a valid key function. Please select from one of the following {key_func_options}")
+    
+
     if storage_uri is None:
         return Limiter(key_func=get_real_ip)
-    if isinstance(storage_uri, str):
+    
+    if key.lower() == "ip":
         return Limiter(key_func=get_real_ip, storage_uri=storage_uri, in_memory_fallback_enabled=True)
+    
+    elif key.lower() == "user":
+        # rate limit by user id
+        return Limiter(key_func=get_user_id_from_token, storage_uri=storage_uri, in_memory_fallback_enabled=True)
     return Limiter(key_func=get_real_ip, storage_uri=storage_uri.get_secret_value(), in_memory_fallback_enabled=True)
 
 
@@ -77,9 +119,11 @@ async def custom_rate_limit_handler(request:Request,exc:RateLimitExceeded):
     
     "/add_user": f"Too many sign up attempts. Please try again {retry_message}",
     
-    f"/send_change_password_link": f"Too many password reset requests. Please try again {retry_message}",
+    "/send_change_password_link": f"Too many password reset requests. Please try again {retry_message}",
     
     "/reset_password": f"Too many password reset attempts. Please try again {retry_message}",
+    
+    "/chat": f"Max message allowance reached. Allowance resets {retry_message}"
     }
 
     rl_message = RATE_LIMIT_MESSAGES.get(request.url.path, "Too many requests. Please try again later")
@@ -101,5 +145,7 @@ async def custom_rate_limit_handler(request:Request,exc:RateLimitExceeded):
         },
     )
 
+
+#TODO - Test for chat endpoint handling user based rate limiting
 
 # TODO - handle load balancer and proxy ip so that limiter does not affect it 

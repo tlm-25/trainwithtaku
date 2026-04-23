@@ -37,7 +37,6 @@ def test_client():
     logging.info("Flushed test database")
 
 
-
 @pytest.mark.asyncio
 @pytest.mark.slow
 async def test_incorrect_login_rate_limit(test_client):

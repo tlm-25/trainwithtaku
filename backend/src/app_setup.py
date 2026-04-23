@@ -27,13 +27,22 @@ def create_app(redis_rl_storage_uri:str|SecretStr|None=None)->FastAPI:
     
     '''
     app = FastAPI()
-    rate_limiter = create_rate_limiter(storage_uri=redis_rl_storage_uri)
-    
-    auth_router = create_auth_router(limiter=rate_limiter)
-    chat_router = create_chat_router(limiter=rate_limiter)
 
+    # rate limiter based on ip (default)
+    ip_rate_limiter = create_rate_limiter(storage_uri=redis_rl_storage_uri)
+
+    # rate limiter based on authenticated user 
+    user_based_rate_limiter = create_rate_limiter(storage_uri=redis_rl_storage_uri,key="user")
     
-    app.state.limiter = rate_limiter
+    auth_router = create_auth_router(limiter=ip_rate_limiter)
+    chat_router = create_chat_router(limiter=user_based_rate_limiter)
+    
+    # find where these are needed in the app - defauly app.state.limiter read by slowapi _rate_limit_exceeded_handler 
+    # however, using customer rate limit handler so this shouldn't be an issue 
+
+    app.state.ip_rate_limiter = ip_rate_limiter
+    app.state.user_based_rate_limiter = user_based_rate_limiter
+
 
     app.add_middleware(
     CORSMiddleware,
