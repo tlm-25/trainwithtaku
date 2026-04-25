@@ -21,8 +21,8 @@ test_non_existent_file_path = HTML_TEMPLATE_FOLDER_PATH+ "/" +"non_existent"
 test_app = create_app()
 # disable rate limiting so that it does not affect testing functionality unless 
 #... only skip this line in tests if explicity testing rate limiting
-test_app.state.limiter.enabled = False
-
+test_app.state.ip_rate_limiter.enabled = False
+test_app.state.user_based_rate_limiter.enabled = False
 client = TestClient(app=test_app)
 
 @pytest.mark.asyncio

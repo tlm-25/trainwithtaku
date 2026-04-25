@@ -65,7 +65,7 @@ def create_chat_router(limiter:Limiter)->APIRouter:
 
     @router.post("/chat")
     @limiter.limit("10/minute")
-    async def generate_chatbot_response(request:Request, chat_request:ChatRequest,database:AsyncDatabase=Depends(create_or_get_database)):
+    async def generate_chatbot_response(request:Request, chat_request:ChatRequest,database:AsyncDatabase=Depends(create_or_get_database),user:dict=Depends(get_current_user)):
         '''
         :param chat_request
         :type chat_request ChatRequest 
