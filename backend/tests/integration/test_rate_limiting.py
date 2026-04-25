@@ -1,12 +1,12 @@
 import pytest
 from fastapi.testclient import TestClient
-
+from src.database.connection import get_mongo_client, create_or_get_database, create_or_get_collection
 
 from src.config import APP_CONFIG
-
+from datetime import datetime
 import redis
 import uuid
-
+from pymongo import AsyncMongoClient
 # from src.rate_limiter import limiter
 
 from src.app_setup import create_app
@@ -14,27 +14,40 @@ import logging
 
 TEST_USER_EMAIL = APP_CONFIG.email.test_user_email
 TEST_USER_PASSWORD = APP_CONFIG.email.test_user_password.get_secret_value()
-
+MONGO_DB_CONNECTION_STRING = APP_CONFIG.database.mongo_db_connection_string.get_secret_value()
+VECTOR_STORE_COLLECTION_NAME = APP_CONFIG.database.vector_store_collection_name
+TEST_DATABASE_NAME  = APP_CONFIG.database.test_database_name
 REDIS_CONNECTION_STRING = APP_CONFIG.redis_config.redis_connection_string.get_secret_value()
+
 TEST_REDIS_CONNECTION_STRING = None
 
+
+async def create_or_get_test_database():
+    '''
+    Database for testing only
+    '''
+
+    async with AsyncMongoClient(host=MONGO_DB_CONNECTION_STRING,serverSelectionTimeoutMS=10000) as mongo_client:
+        database = mongo_client[TEST_DATABASE_NAME]
+        yield database
 
 
 @pytest.fixture
 def test_client():
+    test_app = create_app()
+    test_app.dependency_overrides[create_or_get_database] = create_or_get_test_database
 
-    # create test app
-    test_app =  create_app(redis_rl_storage_uri=TEST_REDIS_CONNECTION_STRING)
-    # create test client
-    test_client = TestClient(app=test_app)
+    return TestClient(app=test_app)
 
-    logging.info("Created test database")
-   
-    yield test_client
 
-    # No flush 
-
-    logging.info("Flushed test database")
+@pytest.fixture
+def login_test_user(test_client):
+    login_response = test_client.post(
+        "/login_with_access_token",
+        data={"username": TEST_USER_EMAIL, "password": TEST_USER_PASSWORD}
+    )
+    print(login_response.json())
+    return {"Authorization": f"Bearer {login_response.json()['access_token']}"}
 
 
 @pytest.mark.asyncio
@@ -74,10 +87,49 @@ async def test_simulate_brute_force_attack(test_client):
 
 
 @pytest.mark.asyncio    
-@pytest.mark.llm
-async def test_user_chatbot_rate_limit():
+@pytest.mark.llm_call
+@pytest.mark.slow
+async def test_user_chatbot_rate_limit(test_client,login_test_user):
+    '''
+    Confirm that user based chat limiting enforced 
+    
+    '''
 
-    login_response = test_client.post("/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":TEST_USER_PASSWORD})
+    for i in range(0,3):
+        user_query = "Should I cut carbs to lose fat?"
+
+        user_message = {'message':user_query,'timestamp':str(datetime.now()),'type':'user'}
+
+        #example chats - mimicks the structure of chats extracted from the database
+        test_chat_history = [
+        {"type":"bot","message":"Hi",'timestamp': '2026-01-01 11:37:11.409816'}]
+
+        dummy_conversation_id  = str(uuid.uuid4())
+       # send a sample
+        with test_client.stream("POST","/chat",json={
+            "user_message": user_message,
+            "chat_history": test_chat_history,
+            "conversation_id": dummy_conversation_id
+            },
+            headers=login_test_user) as response:
+
+            #check that response given
+            chunks = list(response.iter_text())
+            assert all(isinstance(chunk,str) for chunk in chunks)
+
+    response =  test_client.post("/chat",json={
+            "user_message": user_message,
+            "chat_history": test_chat_history,
+            "conversation_id": dummy_conversation_id
+            }, headers=login_test_user) 
+    
+
+    # Ensure that rate limit is enforced for user
+
+    message = response.json()["message"].lower()
+    logging.info(f"message: {message}")
+    assert response.status_code== 429
+    assert "message allowance reached" in message
 
 
 

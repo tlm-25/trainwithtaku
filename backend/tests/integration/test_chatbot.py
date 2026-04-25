@@ -112,9 +112,9 @@ async def test_get_specific_stored_chat(login_test_user):
     with TestClient(app=test_app) as client:
 
         # Use the access token to get current user info
-        headers = {"Authorization": f"Bearer {login_test_user['access_token']}"}
+
     
-        response = client.post(url=f"/get_chat_history",headers=headers,json={"conversation_id":TEST_CONVERSATION_ID})
+        response = client.post(url=f"/get_chat_history",headers=login_test_user,json={"conversation_id":TEST_CONVERSATION_ID})
         assert response.status_code == 200
         assert  "hi" in response.json()[0]["message"].lower() # assuming first message is a greeting from the chatbot saying ""Hi, I'm Monyai your fitness assistant!"
 
@@ -178,4 +178,34 @@ async def test_stream_chatbot_response(test_client_form,login_test_user):
             assert "__REFS__" in chunks[0]
 
 
+@pytest.mark.asyncio
+async def test_attempt_chatbot_not_authenticated(test_client_form):
+    '''
+
+    Test the 401 error raised when user tries to use chatbot without first being signed in
+    
+    
+    '''
+    with TestClient(app=test_app) as client:
+
+        user_query = "Should I cut carbs to lose fat?"
+
+        user_message = {'message':user_query,'timestamp':str(datetime.now()),'type':'user'}
+
+        #example chats - mimicks the structure of chats extracted from the database
+        test_chat_history = [
+        {"type":"bot","message":"Hi, I'm Monyai your fitness assistant! Ask me any fitness or nutrition related questions.",'timestamp': '2026-01-01 11:37:11.409816'}]
+
+        dummy_conversation_id  = str(uuid.uuid4())
+
+
+        response = client.post("/chat",json={
+            "user_message": user_message,
+            "chat_history": test_chat_history,
+            "client_form": test_client_form.model_dump(),
+            "conversation_id": dummy_conversation_id
+            })
+
+        assert response.status_code == 401
+        assert "not authenticated" in response.json()["detail"].lower()
 
