@@ -108,7 +108,7 @@ async def get_current_user(token:str=Depends(oath2_scheme),database:AsyncDatabas
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
+        detail="Could not validate credentials. Please log in again to complete this",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:

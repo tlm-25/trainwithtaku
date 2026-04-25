@@ -1,7 +1,7 @@
-from fastapi import FastAPI, Request, APIRouter
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
-from slowapi import Limiter
+
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
@@ -9,17 +9,38 @@ from pydantic import SecretStr
 from fastapi.middleware.cors import CORSMiddleware
 from src.routers.auth import create_auth_router
 from src.routers.chat import create_chat_router
-# from src.routers import chat
+
 from src.rate_limiter import create_rate_limiter, custom_rate_limit_handler
-from datetime import datetime
+
+
+from pymongo.errors import ServerSelectionTimeoutError
 import logging
 
+
+def _custom_mongo_server_timeout_error(request:Request,exc:ServerSelectionTimeoutError)->JSONResponse:
+    '''
+    Handler for Mongo DB Server timeout errors 
+    
+    :param request: incoming request from client
+    :param exc: The ServerSelectionTimeoutError raised when MongoDB is unreachable
+     
+    '''
+    logging.error(f"Database connection failed: {exc}")
+
+
+    return JSONResponse(
+        content={"message": 
+                 "Apologies, something is wrong on our end. We are looking to resolve this as soon as possible. Please try again later"},
+        status_code=503
+    )
 
 
 def create_app(redis_rl_storage_uri:str|SecretStr|None=None)->FastAPI:
     '''
     Create FastAPI app instance with configured redis rate limiter 
-    Defaults to in memory if not set
+    Redis rate limiter defaults to memory storate if uri not set.
+    This function is synchronous, as there is not yet any io.
+    However, the app it creates is async at runtime. 
     Using factory pattern to create fastapi app instance configured with 
     specific redis uri (makes testing rate limits easier)
     
@@ -52,8 +73,9 @@ def create_app(redis_rl_storage_uri:str|SecretStr|None=None)->FastAPI:
     allow_methods=["*"],
     allow_headers=["*"],
     )
-
+    # adding exception handlers to the app 
     app.add_exception_handler(RateLimitExceeded, custom_rate_limit_handler)
+    app.add_exception_handler(ServerSelectionTimeoutError,_custom_mongo_server_timeout_error)
     app.include_router(auth_router,tags=["auth"])
     app.include_router(chat_router,tags=["chat"])
     

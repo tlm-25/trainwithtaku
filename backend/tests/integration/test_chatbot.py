@@ -2,7 +2,6 @@ from src.database.connection import get_mongo_client, create_or_get_database, cr
 from src.chatbot.chat_history import get_all_stored_user_chats
 from src.chatbot.chat_response import stream_chatbot_response
 from src.schemas import  ClientForm
-# from src.main import app
 from src.app_setup import create_app
 
 from src.config import APP_CONFIG
@@ -19,8 +18,6 @@ TEST_CONVERSATION_ID = APP_CONFIG.chatbot.test_conversation_id
 from fastapi.testclient import TestClient
 
 from pymongo import AsyncMongoClient
-from pymongo.asynchronous.database import AsyncDatabase
-from pymongo.asynchronous.collection import AsyncCollection
 from datetime import datetime
 import pytest
 import uuid
@@ -38,105 +35,29 @@ async def create_or_get_test_database():
         yield database
     
 test_app = create_app()
-test_app.state.limiter.enabled = False
+test_app.state.user_based_rate_limiter.enabled = False
+test_app.state.ip_rate_limiter.enabled = False
 
 test_app.dependency_overrides[create_or_get_database] = create_or_get_test_database
 
 
-
-@pytest.mark.asyncio
-async def test_user_chats_retrieval():
-    '''
-        Test retrieval of stored user chats from the database
-        Assumes there is pre-existing chat data for the test user
-    '''
+@pytest.fixture
+def login_test_user():
 
     with TestClient(app=test_app) as client:
-        # First, login to get a valid access token
+
+        # Login to get a valid access token - using test credentials 
         login_response = client.post(url="/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":TEST_USER_PASSWORD})
         login_response_json = login_response.json()
-          
-        # Use the access token to get current user info
-        headers = {"Authorization": f"Bearer {login_response_json['access_token']}"}  
-        response_1 = client.post(url=f"/get_stored_user_chats",headers=headers)
-        stored_chats = response_1.json()
-
-        assert response_1.status_code == 200
-        assert  len(stored_chats) > 0 #assuming there are multiple stored chats for the test user in the database
-        #check that the response container expected fields - conversation_id, email, messages (list of messages in the conversation), timestamp
-        assert "conversation_id" in stored_chats[0].keys()  
-        assert "email" in stored_chats[0].keys() 
-        assert "messages" in stored_chats[0].keys() 
-
-@pytest.mark.asyncio
-async def test_get_specific_stored_chat():
-    '''
-        Test retrieval of a specific stored user chat from the database
-        Assumes there is pre-existing chat data for the test user
-    '''
-
-    with TestClient(app=test_app) as client:
-        # Test credentials for existing user in test database
-
-        # First, login to get a valid access token
-        login_response = client.post(url="/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":TEST_USER_PASSWORD})
-        login_response_json = login_response.json()
-
-        # Use the access token to get current user info
-        headers = {"Authorization": f"Bearer {login_response_json['access_token']}"}
-    
-        response = client.post(url=f"/get_chat_history",headers=headers,json={"conversation_id":TEST_CONVERSATION_ID})
-        assert response.status_code == 200
-        assert  "hi" in response.json()[0]["message"].lower() # assuming first message is a greeting from the chatbot saying ""Hi, I'm Monyai your fitness assistant!"
+        login_headers = {"Authorization": f"Bearer {login_response_json['access_token']}"} 
+        return login_headers
 
 
-
-@pytest.mark.asyncio
-async def test_create_new_chat():
-    '''
-        test successful creation of new chat
-    '''
-    with TestClient(app=test_app) as client:
-        test_email = TEST_USER_EMAIL
-        password = TEST_USER_PASSWORD
-        # First, login to get a valid access token
-        login_response = client.post(url="/login_with_access_token",data={"username":test_email,"password":password})
-        login_response_json = login_response.json()
-
-        # Use the access token to get current user info
-        headers = {"Authorization": f"Bearer {login_response_json['access_token']}"}
+@pytest.fixture
+def test_client_form():
 
 
-        create_new_chat_response = client.post(url=f"/create_new_chat",headers=headers)
-        create_new_chat_response_json = create_new_chat_response.json()
-
-        assert create_new_chat_response.status_code == 201
-        assert "conversation_id" in create_new_chat_response_json
-
-
-
-
-
-
-@pytest.mark.asyncio
-@pytest.mark.llm_call
-async def test_stream_chatbot_response():
-    '''
-        Test that chatbot gives appropriate response
-    
-    '''
-
-    with TestClient(app=test_app) as client:
-
-        user_query = "Should I cut carbs to lose fat?"
-
-        user_message = {'message':user_query,'timestamp':str(datetime.now()),'type':'user'}
-
-        #example chats - mimicks the structure of chats extracted from the database
-        test_chat_history = [
-        {"type":"bot","message":"Hi, I'm Monyai your fitness assistant! Ask me any fitness or nutrition related questions.",'timestamp': '2026-01-01 11:37:11.409816'}]
-                            
-        test_client_form = ClientForm(  
+    return ClientForm(  
         email="test@gmail.com",
         age=23,
         gender="male",
@@ -155,7 +76,87 @@ async def test_stream_chatbot_response():
         dietary_restrictions="None",
         injuries="None")
 
-        print(user_query)
+
+
+@pytest.mark.asyncio
+async def test_user_chats_retrieval(login_test_user):
+    '''
+        Test retrieval of stored user chats from the database
+        Assumes there is pre-existing chat data for the test user
+    '''
+
+    with TestClient(app=test_app) as client:
+        # First, login to get a valid access token
+        # login_response = client.post(url="/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":TEST_USER_PASSWORD})
+        # login_response_json = login_response.json()
+          
+        # Use the access token to get current user info
+ 
+        response_1 = client.post(url=f"/get_stored_user_chats",headers=login_test_user)
+        stored_chats = response_1.json()
+
+        assert response_1.status_code == 200
+        assert  len(stored_chats) > 0 #assuming there are multiple stored chats for the test user in the database
+        #check that the response container expected fields - conversation_id, email, messages (list of messages in the conversation), timestamp
+        assert "conversation_id" in stored_chats[0].keys()  
+        assert "email" in stored_chats[0].keys() 
+        assert "messages" in stored_chats[0].keys() 
+
+@pytest.mark.asyncio
+async def test_get_specific_stored_chat(login_test_user):
+    '''
+        Test retrieval of a specific stored user chat from the database
+        Assumes there is pre-existing chat data for the test user
+    '''
+
+    with TestClient(app=test_app) as client:
+
+        # Use the access token to get current user info
+        headers = {"Authorization": f"Bearer {login_test_user['access_token']}"}
+    
+        response = client.post(url=f"/get_chat_history",headers=headers,json={"conversation_id":TEST_CONVERSATION_ID})
+        assert response.status_code == 200
+        assert  "hi" in response.json()[0]["message"].lower() # assuming first message is a greeting from the chatbot saying ""Hi, I'm Monyai your fitness assistant!"
+
+
+
+@pytest.mark.asyncio
+async def test_create_new_chat(login_test_user):
+    '''
+        test successful creation of new chat
+    '''
+    with TestClient(app=test_app) as client:
+
+
+        create_new_chat_response = client.post(url=f"/create_new_chat",headers=login_test_user)
+        create_new_chat_response_json = create_new_chat_response.json()
+
+        assert create_new_chat_response.status_code == 201
+        assert "conversation_id" in create_new_chat_response_json
+
+
+
+
+
+
+@pytest.mark.asyncio
+@pytest.mark.llm_call
+async def test_stream_chatbot_response(test_client_form,login_test_user):
+    '''
+        Test that chatbot gives appropriate response
+    
+    '''
+
+    with TestClient(app=test_app) as client:
+
+        user_query = "Should I cut carbs to lose fat?"
+
+        user_message = {'message':user_query,'timestamp':str(datetime.now()),'type':'user'}
+
+        #example chats - mimicks the structure of chats extracted from the database
+        test_chat_history = [
+        {"type":"bot","message":"Hi, I'm Monyai your fitness assistant! Ask me any fitness or nutrition related questions.",'timestamp': '2026-01-01 11:37:11.409816'}]
+
         dummy_conversation_id  = str(uuid.uuid4())
 
 
@@ -165,7 +166,8 @@ async def test_stream_chatbot_response():
             "chat_history": test_chat_history,
             "client_form": test_client_form.model_dump(),
             "conversation_id": dummy_conversation_id
-            }) as response:
+            },
+            headers=login_test_user) as response:
 
             chunks = list(response.iter_text())
 

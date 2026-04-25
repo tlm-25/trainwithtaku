@@ -19,6 +19,7 @@ from src.app_setup import create_app
 
 app = create_app(redis_rl_storage_uri=APP_CONFIG.redis_config.redis_connection_string)
 
+
 # app.add_middleware(
 #     CORSMiddleware,
 
@@ -54,5 +55,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "missing_fields": missing_fields,
         },
     )
+
+
 
 
