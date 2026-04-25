@@ -39,7 +39,7 @@ def test_client():
 
 @pytest.mark.asyncio
 @pytest.mark.slow
-async def test_incorrect_login_rate_limit(test_client):
+async def test_simulate_brute_force_attack(test_client):
     '''
         Simulate brute force attack where an attacker is trying to guess a password
         Return 401 error for the first 10
@@ -71,7 +71,15 @@ async def test_incorrect_login_rate_limit(test_client):
     logging.info(f"message: {message}")
     assert response.status_code== 429
     assert "too many login attempts." in message
-    
+
+
+@pytest.mark.asyncio    
+@pytest.mark.llm
+async def test_user_chatbot_rate_limit():
+
+    login_response = test_client.post("/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":TEST_USER_PASSWORD})
+
+
 
 
 
