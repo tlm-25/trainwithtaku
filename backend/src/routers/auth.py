@@ -189,10 +189,17 @@ def create_auth_router(limiter:Limiter)->APIRouter:
                 max_age = REFRESH_TOKEN_EXPIRE_DAYS* 24 * 60 * 60 # length of validility of refresh token in seconds (for browser cookie)
                 
                 response = JSONResponse(content={"access_token":access_token,"token_type":"bearer","message":"successful login"}, status_code=200)
+                
+                # boolean checking which environment we are in. If in dev environment, use http. If in prod, use https
+                secure = ENV not in ["dev", "development"]
+                
+                
                 # not sending refresh token to the client - setting to http only (stop javascript based attacks).
                 # storing refresh token in browser cookie
+                
+
                 response.set_cookie(
-                    key="refresh_token",value=refresh_token, httponly=True, samesite="lax", max_age=max_age
+                    key="refresh_token",value=refresh_token, httponly=True, samesite="lax", max_age=max_age,secure=secure
 
                 )
                 print("cookie set on response")
