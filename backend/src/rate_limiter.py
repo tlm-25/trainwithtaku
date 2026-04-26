@@ -70,17 +70,20 @@ def create_rate_limiter(storage_uri: str | SecretStr | None = None,key:str="ip")
     if not key.lower() in key_func_options:
         raise ValueError(f"'{key}' is not a valid key function. Please select from one of the following {key_func_options}")
     
-
+    # use in-memory 
     if storage_uri is None:
         return Limiter(key_func=get_real_ip)
     
+    
+    uri = storage_uri.get_secret_value() if isinstance(storage_uri, SecretStr) else storage_uri
+    
     if key.lower() == "ip":
-        return Limiter(key_func=get_real_ip, storage_uri=storage_uri, in_memory_fallback_enabled=True)
+        return Limiter(key_func=get_real_ip, storage_uri=uri, in_memory_fallback_enabled=True)
     
     elif key.lower() == "user":
         # rate limit by user id
-        return Limiter(key_func=get_user_id_from_token, storage_uri=storage_uri, in_memory_fallback_enabled=True)
-    return Limiter(key_func=get_real_ip, storage_uri=storage_uri.get_secret_value(), in_memory_fallback_enabled=True)
+        return Limiter(key_func=get_user_id_from_token, storage_uri=uri, in_memory_fallback_enabled=True)
+    return Limiter(key_func=get_real_ip, storage_uri=uri, in_memory_fallback_enabled=True)
 
 
 async def custom_rate_limit_handler(request:Request,exc:RateLimitExceeded):

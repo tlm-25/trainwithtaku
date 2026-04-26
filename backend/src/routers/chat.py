@@ -22,6 +22,7 @@ from src.config import APP_CONFIG
 CHAT_COLLECTION_NAME = APP_CONFIG.database.chat_collection_name
 VECTOR_STORE_COLLECTION_NAME = APP_CONFIG.database.vector_store_collection_name
 
+RATE_LIMIT_CONFIG = APP_CONFIG.redis_config.rate_limits
 
 router = APIRouter()
 
@@ -64,7 +65,7 @@ def create_chat_router(limiter:Limiter)->APIRouter:
             return JSONResponse(content={"message":message}, status_code=500)
 
     @router.post("/chat")
-    @limiter.limit("3/minute")
+    @limiter.limit(RATE_LIMIT_CONFIG.chat_limit)
     async def generate_chatbot_response(request:Request, chat_request:ChatRequest,database:AsyncDatabase=Depends(create_or_get_database),user:dict=Depends(get_current_user)):
         '''
         :param chat_request

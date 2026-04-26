@@ -120,10 +120,11 @@ export default function Authentication (props) {
             else{
                 //login user
                 const loginResponse = await login(email,password)
-    
+                // const data = await loginResponse.json()
+                const message = loginResponse.message
                 
 
-                if(loginResponse.status === 200|| loginResponse.message.toLowerCase().includes("success") ){
+                if(loginResponse.status === 200|| message.toLowerCase().includes("success") ){
                     //reset the inputs and close the modal once the user is logged in
                      
                     handleCloseModal()
@@ -133,7 +134,7 @@ export default function Authentication (props) {
 
                 }
 
-                else if (loginResponse.status === 401 || loginResponse.message.toLowerCase().includes("incorrect")){
+                else if (loginResponse.status === 401 || message.toLowerCase().includes("incorrect")){
 
                     setLoginMessage("Incorrect email or password")
                     toast.error(`Incorrect email or password`);
@@ -142,9 +143,9 @@ export default function Authentication (props) {
                 }
 
 
-                else if (loginResponse.status === 429 || loginResponse.message.toLowerCase().includes("too many login attempts")){
-                    setLoginMessage("Too many login attempts. Please try again in 1 minute")
-                    toast.error("Too many login attempts. Please try again in 1 minute")
+                else if (loginResponse.status === 429 || message.toLowerCase().includes("too many login attempts")){
+                    setLoginMessage(`${message}}`)
+                    toast.error(`${message}}`)
 
 
                 }
@@ -184,7 +185,7 @@ export default function Authentication (props) {
                 )}
 
                 {!isRegistration && loginMessage.toLowerCase().includes("too many") && (
-                    <p className="auth-instruction-text">❌ Too many login attempts. Please try again in 1 minute</p>
+                    <p className="auth-instruction-text">❌ {loginMessage}</p>
                 )}
                 
                 {isRegistration && (

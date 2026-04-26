@@ -91,6 +91,13 @@ class DomainConfig(BaseModel):
     frontend_domain_dev:str 
     frontend_domain_prod:str
 
+class RateLimitConfig(BaseModel):
+    login_limit: str
+    chat_limit: str
+    sign_up_limit: str
+    send_password_change_limit: str
+    reset_password_limit: str
+
 class RedisConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
     redis_connection_string:SecretStr
@@ -98,6 +105,7 @@ class RedisConfig(BaseModel):
     host:str
     port:int
     database_name:str
+    rate_limits:RateLimitConfig
 
 
 

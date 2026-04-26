@@ -42,6 +42,11 @@ USER_ACCOUNTS_COLLECTION_NAME = APP_CONFIG.database.user_accounts_collection_nam
 REFRESH_TOKEN_EXPIRE_DAYS = APP_CONFIG.auth.refresh_token_expire_days
 PASSWORD_RESET_COLLECTION_NAME = APP_CONFIG.database.password_reset_collection_name
 RESET_PASSWORD_LINK_EXPIRE_MINUTES = APP_CONFIG.auth.reset_password_link_expire_minutes
+
+# RATE LIMITS
+RATE_LIMIT_CONFIG = APP_CONFIG.redis_config.rate_limits
+
+
 ENV = APP_CONFIG.env_config.app_environment
 
 FRONTEND_URL = APP_CONFIG.domain.frontend_domain_dev.lower() if ENV in ["dev","development"] else APP_CONFIG.domain.frontend_domain_prod
@@ -67,7 +72,7 @@ def create_auth_router(limiter:Limiter)->APIRouter:
 
     #create user
     @router.post("/add_user")
-    @limiter.limit("5/minute")
+    @limiter.limit(RATE_LIMIT_CONFIG.sign_up_limit)
     async def add_user(request:Request,user_sign_up_form:UserSignUpForm,background_tasks:BackgroundTasks,database:AsyncDatabase=Depends(create_or_get_database))->JSONResponse:
         '''
             Add new user to the database 
@@ -137,7 +142,7 @@ def create_auth_router(limiter:Limiter)->APIRouter:
             return JSONResponse(content={"message":f"{form_submit_message}"},status_code=200)
 
     @router.post("/login_with_access_token")
-    @limiter.limit("10/5minutes")
+    @limiter.limit(RATE_LIMIT_CONFIG.login_limit)
     async def login_with_access_token(request:Request,database:AsyncDatabase=Depends(create_or_get_database),form_data: OAuth2PasswordRequestForm = Depends())->JSONResponse:
         '''
         This endpoint authenticates the user using username and password, sets the refresh token, stores it in the cookie, and returns an access token in the response body
@@ -354,7 +359,7 @@ def create_auth_router(limiter:Limiter)->APIRouter:
 
 
     @router.post("/send_change_password_link")
-    @limiter.limit("5/minute")
+    @limiter.limit(RATE_LIMIT_CONFIG.send_password_change_limit)
     async def send_change_password_link(request:Request, user_email:UserEmail, background_tasks:BackgroundTasks, database=Depends(create_or_get_database)):
         '''
             Endpoint to send a link to user's email if they need to change their password. Note that this endpoint does NOT
@@ -389,7 +394,7 @@ def create_auth_router(limiter:Limiter)->APIRouter:
 
     
     @router.post("/reset_password")
-    @limiter.limit("5/minute")
+    @limiter.limit(RATE_LIMIT_CONFIG.send_password_change_limit)
     async def reset_password(request:Request, reset_password_form:UserResetPasswordForm,database=Depends(create_or_get_database)):
 
         '''

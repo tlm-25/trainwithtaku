@@ -11,7 +11,7 @@ from pymongo import AsyncMongoClient
 
 from src.app_setup import create_app
 import logging
-
+import re
 TEST_USER_EMAIL = APP_CONFIG.email.test_user_email
 TEST_USER_PASSWORD = APP_CONFIG.email.test_user_password.get_secret_value()
 MONGO_DB_CONNECTION_STRING = APP_CONFIG.database.mongo_db_connection_string.get_secret_value()
@@ -21,6 +21,12 @@ REDIS_CONNECTION_STRING = APP_CONFIG.redis_config.redis_connection_string.get_se
 
 TEST_REDIS_CONNECTION_STRING = None
 
+# RATE LIMITS 
+RATE_LIMITS = APP_CONFIG.redis_config.rate_limits
+
+def _get_n_iterations_from_rate_limit(rate_limit_string:str):
+    n_iterations = re.search(r"([0-9]+)\/", rate_limit_string).group(1) 
+    return int(n_iterations)
 
 async def create_or_get_test_database():
     '''
@@ -65,10 +71,11 @@ async def test_simulate_brute_force_attack(test_client):
         to turn on local redis server run "docker run -d -p 6379:6379 --name some-redis redis" 
     
     '''
+    n_iter = _get_n_iterations_from_rate_limit(rate_limit_string=RATE_LIMITS.login_limit)
 
 
     # first 10 login attemps (incorrect password)
-    for i in range(0,10):
+    for i in range(0,n_iter):
 
         print (f"attempt {i}")
         
@@ -94,8 +101,9 @@ async def test_user_chatbot_rate_limit(test_client,login_test_user):
     Confirm that user based chat limiting enforced 
     
     '''
+    n_iter = _get_n_iterations_from_rate_limit(rate_limit_string=RATE_LIMITS.chat_limit)
 
-    for i in range(0,3):
+    for i in range(0,n_iter):
         user_query = "Should I cut carbs to lose fat?"
 
         user_message = {'message':user_query,'timestamp':str(datetime.now()),'type':'user'}
