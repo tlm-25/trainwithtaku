@@ -84,10 +84,7 @@ export default function Authentication (props) {
     const {signUp, login} = useAuth()
 
     async function handleAuthenticate () {
-        //if email empty/invalid, password empty/invalid or less than 6 characters, block it 
-        // if(!email || !email.includes("@") || !password ||password.length < 8 || isAuthenticating) {
-        //     return }
-        
+
             //isAuthenticating is set to try while we are authenticating 
             setIsAuthenticating(true)
             setError(null)

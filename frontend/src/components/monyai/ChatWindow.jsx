@@ -23,6 +23,8 @@ function ChatWindow() {
 
     const [showSourcesModal,setShowSourcesModal] = useState(false)
 
+    const [userErrorMessage,setUserErrorMessage] = useState("")
+
     const currentChatIDRef = useRef(null)
 
     //using useRef instead of useState to update value of streamed content without re-rendering
@@ -122,8 +124,7 @@ function ChatWindow() {
             });
 
             if(response.ok){
-                // console.log(currentChatID)
-                // console.log(response)
+
                 // setChatLog([{ type: 'bot', message: userInput,timestamp:String(now)])
                 //get the specific chat from the chat history 
                 const response = await fetchWithAuth(`/api/get_chat_history`,{
@@ -234,7 +235,7 @@ function ChatWindow() {
         if (!userInput.trim()) return; 
 
         const userMessage = { type: 'user', message: userInput,timestamp:String(now) };
-        console.log(now)
+
         
         // update chat log array 
         const newChatLog = [...chatLog, userMessage];
@@ -361,7 +362,6 @@ function ChatWindow() {
 
                             //if chunk includes "__REFS__" string, this means the chunk is the retrieved documenets reference and not part of the chatbot answer
                             const stringFormattedDocuments = chunkValue.split("__REFS__")[1]
-                            // console.log(stringFormattedDocuments)
 
                             setChatLog((prev)=>{
                                 const updatedChatlog = [...prev]
@@ -389,12 +389,24 @@ function ChatWindow() {
                 const finalChat = [...prev];
                 // sessionstorage.setItem('chatLog', JSON.stringify(finalChat));
                 return finalChat;
-      });
+                });
                 
 
             }
 
             else if (!response.ok) {
+                
+
+                //if we get a rate limit error
+                if(response.status === 429){
+                    const data = await response.json()
+                    console.log
+                    const message = data.message
+                    
+                    setUserErrorMessage(`${message}`)
+                    toast.error(message)
+                    return
+                }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
@@ -444,8 +456,7 @@ function ChatWindow() {
                 const data = await response.json()
                 setChatLog(data)
                 setCurrentChatID(newChatID)
-                console.log("generating chat")
-                console.log(newChatID)
+
                 // send message to newly create chat, stream answer from chatbot
                 await streamChatbotAnswer(newChatID)
                 
@@ -526,6 +537,9 @@ function ChatWindow() {
 
                     {!loading && <button className="cancel-query-button" onClick={clearChatHistory}>Clear chat history</button>}
                     { loading && <button className="cancel-query-button" onClick={handleCancelResponse} type="submit" >Cancel</button>}
+                    
+                    { userErrorMessage && <div className="cancel-query-button" >{userErrorMessage}</div>}
+                    
                     <form onSubmit={handleSubmit} className="chat-form">
 
                         <input
