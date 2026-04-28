@@ -199,7 +199,7 @@ def create_auth_router(limiter:Limiter)->APIRouter:
                 
 
                 response.set_cookie(
-                    key="refresh_token",value=refresh_token, httponly=True, samesite="lax", max_age=max_age,secure=secure
+                    key="refresh_token",value=refresh_token, httponly=True, samesite="lax", max_age=max_age
 
                 )
                 print("cookie set on response")

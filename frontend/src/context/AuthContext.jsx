@@ -278,11 +278,14 @@ export function AuthProvider(props){
                 setGlobalUser(null)
                 setAccessToken(null)
 
+            } finally {
+                // always mark auth check as complete, even if it fails — unblocks components waiting on isLoading
+                setIsLoading(false)
             }
 
         }
 
-        //invoke the authentication check 
+        //invoke the authentication check
         checkAuth()
 
 

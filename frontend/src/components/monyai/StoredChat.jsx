@@ -6,7 +6,7 @@ function StoredChat(props){
 
     // Get chat id for specific user 
 
-    const {conversationId,setChatLogFunction,setCurrentChatIDFunction,currentChatID,allStoredChatsState,setAllStoredChatsFunction,currentChatLogState, index, chatSelectedFlag, setChatSelectedFlagFunction, getSpecificChatFunction} = props
+    const {conversationId,setChatLogFunction,setCurrentChatIDFunction,currentChatRef,currentChatID,allStoredChatsState,setAllStoredChatsFunction,currentChatLogState, index, chatSelectedFlag, setChatSelectedFlagFunction, getSpecificChatFunction} = props
 
     const {globalUser,fetchWithAuth} = useAuth()
 
@@ -50,6 +50,8 @@ function StoredChat(props){
                 setChatLogFunction(data)
                 setChatSelectedFlagFunction(true)
                 setCurrentChatIDFunction(conversationId)
+                // set the ref value immediately to convo id
+                currentChatRef.current = conversationId
                 
 
             }

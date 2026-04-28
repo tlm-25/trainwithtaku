@@ -16,8 +16,15 @@ function ChatWindow() {
     //list of all chats created by the user
     const [allCreatedChats,setAllCreatedChats] = useState([]);
 
-    //the conversation id of the current selected chat (not the conversation id of the backend)
-    const [currentChatID,setCurrentChatID] = useState(null)
+    /*the conversation id of the current selected chat (not the conversation id of the backend)
+     triggers rerender when active chat changes. Need so tha UI correctly highlights selected chat...
+    and show the correct messages*/
+
+    const [currentChatID,setCurrentChatID] = useState(null); 
+    
+    /* Check if current chat ID has been changed - used to detect a change before rerender */
+    const currentChatIDRef = useRef(null);
+
     //check if user is currently creating a chat or not
     const [creatingChat, setCreatingChat] = useState(false)
 
@@ -25,7 +32,7 @@ function ChatWindow() {
 
     const [userErrorMessage,setUserErrorMessage] = useState("")
 
-    const currentChatIDRef = useRef(null)
+
 
     //using useRef instead of useState to update value of streamed content without re-rendering
     const streamedTextRef = useRef("");
@@ -44,7 +51,7 @@ function ChatWindow() {
     const controllerRef = useRef(false)
 
     //tracking if user has pressed the cancel button
-    const cancelledRef = useRef(null)
+    const cancelledRef = useRef(null);
 
     const {globalUser,logout,fetchWithAuth} = useAuth()
     const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -64,9 +71,19 @@ function ChatWindow() {
 
 
          getAllStoredChats(setAllCreatedChats,fetchWithAuth);
+         console.log(allCreatedChats)
         
 
     },[])
+
+
+    useEffect(()=>{
+
+        // mirrors currentChatID state so the async stream loop can read the latest value without a stale closure
+
+        currentChatIDRef.current = currentChatID;
+
+    },[currentChatID])
 
 
     async function handleShowSources (sources) {
@@ -79,12 +96,6 @@ function ChatWindow() {
 
 
     }
-
-
-    
-    
-
-
 
 
     //every time a new message is in the chat, or a different chat is selected, scroll to the bottom of the chat area (everytime chatlog changes)
@@ -137,6 +148,7 @@ function ChatWindow() {
 
                 setChatLog([chatData[0]])
                 await getAllStoredChats(setAllCreatedChats,fetchWithAuth)
+                
                 
             }
             
@@ -326,34 +338,43 @@ function ChatWindow() {
                         */
                         if(!chunkValue.includes("__REFS__")){
                             streamedTextRef.current += chunkValue
+                            console.log(`CUrrent chat id ref ${currentChatIDRef} `)
+                            console.log(`generating for convo id ${conversationId} `)
+
+                        
                             //update chatlog with new streamed text - update the last message
                             //update the chatlog
-                            setChatLog((prev)=>{
-                                
-                                //creating shallow copy of chat log - avoid mutating state directly for non-primitive typ
-                                const updatedChatlog = [...prev]
+                            // only continue showing stream if the currentchatid ref is equalt to the chat ID used when function first called
+                            if(currentChatIDRef.current===conversationId){
+                                setChatLog((prev)=>{
+                                    
+                                    //creating shallow copy of chat log - avoid mutating state directly for non-primitive type
+                                    const updatedChatlog = [...prev]
 
-                                //get the latest entry of the chat log (will have the blank text)
-                                const latestMessage = updatedChatlog[updatedChatlog.length - 1]
+                                    //get the latest entry of the chat log (will have the blank text)
+                                    const latestMessage = updatedChatlog[updatedChatlog.length - 1]
 
-                                //update the last entry with the streamed text
-                                if(latestMessage.type === 'bot'){
+                                    //update the last entry with the streamed text
+                                    if(latestMessage.type === 'bot'){
 
-                                    //filling in  the empty string with the text retrieved from the front end
-                                    updatedChatlog[updatedChatlog.length - 1] = {
-                                        ...latestMessage,
-                                        message: streamedTextRef.current
+                                        //filling in  the empty string with the text retrieved from the front end
+                                        updatedChatlog[updatedChatlog.length - 1] = {
+                                            ...latestMessage,
+                                            message: streamedTextRef.current
+                                        }
+
                                     }
+
+                                
+                                
+
+                                    return updatedChatlog
+
+                                
+                                });
 
                                 }
 
-                            
-                            
-
-                            return updatedChatlog
-
-                            
-                            });
 
                         }
 
@@ -362,18 +383,21 @@ function ChatWindow() {
 
                             //if chunk includes "__REFS__" string, this means the chunk is the retrieved documenets reference and not part of the chatbot answer
                             const stringFormattedDocuments = chunkValue.split("__REFS__")[1]
-
-                            setChatLog((prev)=>{
-                                const updatedChatlog = [...prev]
-                                const latestMessage = updatedChatlog[updatedChatlog.length - 1]
-                                if(latestMessage.type === 'bot'){
-                                    updatedChatlog[updatedChatlog.length - 1] = {
-                                        ...latestMessage,
-                                        reference_docs: stringFormattedDocuments
+                            
+                            if(currentChatIDRef.current === conversationId){
+                                setChatLog((prev)=>{
+                                    const updatedChatlog = [...prev]
+                                    const latestMessage = updatedChatlog[updatedChatlog.length - 1]
+                                    if(latestMessage.type === 'bot'){
+                                        updatedChatlog[updatedChatlog.length - 1] = {
+                                            ...latestMessage,
+                                            reference_docs: stringFormattedDocuments
+                                        }
                                     }
-                                }
-                                return updatedChatlog
-                            })
+                                    return updatedChatlog
+                                })
+
+                          }
 
                         }
                         
@@ -439,7 +463,7 @@ function ChatWindow() {
     const handleSubmit = async (event) => {
         event.preventDefault();
         
-        // //if chat not yet selected (i.e.e user just starts typing)
+        // //if chat not yet selected (i.e. user just starts typing without selecting chat first)
         if(!chatSelectedFlag){
             //create a new chat id 
             const newChatID = await createNewChat(event)
@@ -454,8 +478,12 @@ function ChatWindow() {
 
             if (response.ok){
                 const data = await response.json()
+                console.log(data)
+                //set the chatlog to the current selected chat
                 setChatLog(data)
                 setCurrentChatID(newChatID)
+                currentChatIDRef.current = newChatID  // immediate sync
+
 
                 // send message to newly create chat, stream answer from chatbot
                 await streamChatbotAnswer(newChatID)
@@ -503,7 +531,7 @@ function ChatWindow() {
                         
                         {allCreatedChats.map((storedChat,index)=>(
 
-                                <StoredChat key={String(index)+storedChat.conversation_id} index = {index+1} conversationId = {storedChat.conversation_id} setChatLogFunction={setChatLog} setCurrentChatIDFunction={setCurrentChatID} currentChatID={currentChatID} setAllStoredChatsFunction={setAllCreatedChats} currentChatLogState={chatLog} chatSelectedFlag={chatSelectedFlag} setChatSelectedFlagFunction={setChatSelectedFlag} allStoredChatsState={allCreatedChats}/>
+                                <StoredChat key={String(index)+storedChat.conversation_id} index = {index+1} conversationId = {storedChat.conversation_id} setChatLogFunction={setChatLog} setCurrentChatIDFunction={setCurrentChatID} currentChatID={currentChatID} setAllStoredChatsFunction={setAllCreatedChats} currentChatLogState={chatLog} chatSelectedFlag={chatSelectedFlag} setChatSelectedFlagFunction={setChatSelectedFlag} allStoredChatsState={allCreatedChats} currentChatRef = {currentChatIDRef}/>
                             ))}
 
                     </div>
