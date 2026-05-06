@@ -227,7 +227,7 @@ def create_auth_router(limiter:Limiter)->APIRouter:
         '''
         # get refresh token from cookie (assumes the user is logged in and has refresh token stored in browser cookie)
         refresh_token = request.cookies.get("refresh_token")
-
+        logging.info(refresh_token)
 
         # if no refresh token provided, return 401 error - user must be logged in to refresh the access token
         if not refresh_token:

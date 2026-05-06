@@ -47,12 +47,44 @@ export function ChatProvider(props) {
 
 
     }
+    //finalise buffer when streaming done, set isDone to true and add sources if available
+    function finalizeBuffer(conversationId, sources = null) {
+        if (bufferRef.current[conversationId]) {
+            bufferRef.current[conversationId].isDone = true;
+            bufferRef.current[conversationId].sources = sources;
+        }
+
+        setStreamBuffer(prev => ({
+            ...prev,
+            [conversationId]: { ...bufferRef.current[conversationId] }
+        }));
+    }
+
+
+    function removeBuffer(conversationId){
+
+        // remove specific convo id from state and ref
+
+        if(buffer[conversationId]){
+            delete bufferRef.current[conversationId];
+        }
+
+        setStreamBuffer((prev)=>{
+            // create new object without the conversation id key to trigger re-render and update UI
+            const { [conversationId]: _, ...rest } = prev;
+            return rest;
+
+
+
+        })
+
+    }
 
 
     
     //anything contained here becomes part of the gloabl state - accessible anywhere in application
     //anything in here is shared via context
-    const value = {appendStringToBuffer,bufferRef}
+    const value = {appendStringToBuffer,finalizeBuffer,bufferRef}
 
 
 
