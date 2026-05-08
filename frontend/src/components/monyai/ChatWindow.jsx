@@ -2,7 +2,9 @@ import {useState, useEffect, useRef} from 'react'
 import '../../index.css'
 import StoredChat from './StoredChat';
 import { getAllStoredChats } from '../../utils';
+
 import { useAuth } from '../../context/AuthContext';
+import { useChatStreamContext } from '../../context/ChatContext';
 import {toast} from 'react-hot-toast'
 import SourcesModal from './SourcesDisplayModal';
 import ReactMarkdown from 'react-markdown'
@@ -34,9 +36,6 @@ function ChatWindow() {
 
 
 
-    //using useRef instead of useState to update value of streamed content without re-rendering
-    const streamedTextRef = useRef("");
-
     const chatWindowBottomRef = useRef(null);
 
 
@@ -54,6 +53,9 @@ function ChatWindow() {
     const cancelledRef = useRef(null);
 
     const {globalUser,logout,fetchWithAuth} = useAuth()
+
+    // consume chat stream context - buffer streams per conversation so switching chats mid-stream doesn't lose data
+    const { appendStringToBuffer, finalizeBuffer, clearBuffer, bufferRef } = useChatStreamContext()
     const [sidebarOpen, setSidebarOpen] = useState(false)
 
     const [messageSources,setMessageSources] = useState("")
@@ -210,7 +212,8 @@ function ChatWindow() {
         //reset states
         setLoading(false)
         setUserInput("")
-        streamedTextRef.current = ""
+        // clear the buffer for the cancelled conversation
+        clearBuffer(currentChatID)
         setChatLog((prev) => {
 
             //creating shallow copy of chat log and removeing the last two elements (i.e. deleting the last user query and partially generated text from chatbot)
@@ -255,9 +258,8 @@ function ChatWindow() {
         setUserInput('');
         setLoading(true);
 
-        //reset ref
-
-        streamedTextRef.current = ""
+        // clear any existing buffer for this conversation before starting a new stream
+        clearBuffer(conversationId)
 
             //browser api class which is used to cancel api requests 
             const controller = new AbortController()
@@ -331,59 +333,46 @@ function ChatWindow() {
                         const chunkValue = decoder.decode(value,{stream: true})
 
                         
-                        /*update the streamed text reference - only if the chunk value does not include the __REFS__ flag (which indicates that the chunk is the retrieved documents reference text, not part of the chatbot answer)
-                        Everything after the __REFS__ is refernce text, and exists in a seperate chunk from the chatbot answer
-                        
-                        
+                        /*chunk is either chatbot answer text or a __REFS__ chunk containing the retrieved document references.
+                        Everything after __REFS__ is reference text, sent as a separate final chunk after the answer finishes streaming.
                         */
                         if(!chunkValue.includes("__REFS__")){
-                            streamedTextRef.current += chunkValue
-                            console.log(`CUrrent chat id ref ${currentChatIDRef} `)
-                            console.log(`generating for convo id ${conversationId} `)
 
-                        
-                            //update chatlog with new streamed text - update the last message
-                            //update the chatlog
-                            // only continue showing stream if the currentchatid ref is equalt to the chat ID used when function first called
+                            // always append to buffer regardless of which chat is active - prevents data loss when switching chats mid-stream
+                            appendStringToBuffer(conversationId, chunkValue)
+
+                            // only update chatlog display if this is the currently viewed chat
                             if(currentChatIDRef.current===conversationId){
                                 setChatLog((prev)=>{
-                                    
+
                                     //creating shallow copy of chat log - avoid mutating state directly for non-primitive type
                                     const updatedChatlog = [...prev]
 
                                     //get the latest entry of the chat log (will have the blank text)
                                     const latestMessage = updatedChatlog[updatedChatlog.length - 1]
 
-                                    //update the last entry with the streamed text
+                                    //update the last entry with the accumulated buffer text for this conversation
                                     if(latestMessage.type === 'bot'){
-
-                                        //filling in  the empty string with the text retrieved from the front end
                                         updatedChatlog[updatedChatlog.length - 1] = {
                                             ...latestMessage,
-                                            message: streamedTextRef.current
+                                            message: bufferRef.current[conversationId]?.text ?? ""
                                         }
-
                                     }
 
-                                
-                                
-
                                     return updatedChatlog
-
-                                
                                 });
-
-                                }
-
-
+                            }
                         }
 
                         else {
                             //Once the chatbot has finished streaming its answer
 
-                            //if chunk includes "__REFS__" string, this means the chunk is the retrieved documenets reference and not part of the chatbot answer
+                            //if chunk includes "__REFS__" string, this means the chunk is the retrieved documents reference and not part of the chatbot answer
                             const stringFormattedDocuments = chunkValue.split("__REFS__")[1]
-                            
+
+                            // finalize the buffer with sources so they are recoverable if user switches back to this chat
+                            finalizeBuffer(conversationId, stringFormattedDocuments)
+
                             if(currentChatIDRef.current === conversationId){
                                 setChatLog((prev)=>{
                                     const updatedChatlog = [...prev]
@@ -396,9 +385,7 @@ function ChatWindow() {
                                     }
                                     return updatedChatlog
                                 })
-
                           }
-
                         }
                         
 
@@ -448,6 +435,8 @@ function ChatWindow() {
             
         } finally {
             setLoading(false);
+            // clear buffer after short delay — gives time for final chatLog update to complete before removing buffer
+            setTimeout(() => clearBuffer(conversationId), 2000)
         }
 
 

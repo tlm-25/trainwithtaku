@@ -1,6 +1,7 @@
 
 import {useState} from 'react'
 import { useAuth } from '../../context/AuthContext';
+import { useChatStreamContext } from '../../context/ChatContext';
 
 function StoredChat(props){
 
@@ -9,6 +10,9 @@ function StoredChat(props){
     const {conversationId,setChatLogFunction,setCurrentChatIDFunction,currentChatRef,currentChatID,allStoredChatsState,setAllStoredChatsFunction,currentChatLogState, index, chatSelectedFlag, setChatSelectedFlagFunction, getSpecificChatFunction} = props
 
     const {globalUser,fetchWithAuth} = useAuth()
+
+    // access buffer ref to check if a conversation has an active stream when switching chats
+    const { bufferRef, clearBuffer } = useChatStreamContext()
 
 
 
@@ -47,6 +51,13 @@ function StoredChat(props){
 
 
 
+                // if this conversation has an active stream in the buffer, inject it as the last bot message
+                // so the user can see the in-progress response when switching back mid-stream
+                const liveBuffer = bufferRef.current[conversationId]
+                if (liveBuffer && !liveBuffer.isDone) {
+                    data.push({ type: 'bot', message: liveBuffer.text, timestamp: new Date().toISOString() })
+                }
+
                 setChatLogFunction(data)
                 setChatSelectedFlagFunction(true)
                 setCurrentChatIDFunction(conversationId)
@@ -82,6 +93,9 @@ function StoredChat(props){
 
         //if user changes mind about deleting chat and clicks 'no' when they are asked to confirm
         if (!confirmed) return;
+
+        // clear any active stream buffer for the chat being deleted
+        clearBuffer(conversationId)
 
         //if no chat currently selected, just delete it and don't select a chat
 
