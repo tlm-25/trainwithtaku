@@ -64,27 +64,28 @@ export function ChatProvider(props) {
     function removeBuffer(conversationId){
 
         // remove specific convo id from state and ref
-
-        if(buffer[conversationId]){
+        if (bufferRef.current[conversationId]) {
             delete bufferRef.current[conversationId];
         }
 
         setStreamBuffer((prev)=>{
-            // create new object without the conversation id key to trigger re-render and update UI
             const { [conversationId]: _, ...rest } = prev;
             return rest;
-
-
-
         })
 
     }
 
 
     
-    //anything contained here becomes part of the gloabl state - accessible anywhere in application
-    //anything in here is shared via context
-    const value = {appendStringToBuffer,finalizeBuffer,bufferRef}
+    // anything contained here becomes part of the global state - accessible anywhere in application
+    // anything in here is shared via context
+    const value = {
+        appendStringToBuffer,
+        finalizeBuffer,
+        removeBuffer,
+        clearBuffer: removeBuffer,
+        bufferRef
+    }
 
 
 

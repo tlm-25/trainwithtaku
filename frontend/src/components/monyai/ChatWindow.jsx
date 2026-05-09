@@ -55,7 +55,7 @@ function ChatWindow() {
     const {globalUser,logout,fetchWithAuth} = useAuth()
 
     // consume chat stream context - buffer streams per conversation so switching chats mid-stream doesn't lose data
-    const { appendStringToBuffer, finalizeBuffer, clearBuffer, bufferRef } = useChatStreamContext()
+    const { appendStringToBuffer, finalizeBuffer, removeBuffer, bufferRef } = useChatStreamContext()
     const [sidebarOpen, setSidebarOpen] = useState(false)
 
     const [messageSources,setMessageSources] = useState("")
@@ -213,7 +213,7 @@ function ChatWindow() {
         setLoading(false)
         setUserInput("")
         // clear the buffer for the cancelled conversation
-        clearBuffer(currentChatID)
+        removeBuffer(currentChatID)
         setChatLog((prev) => {
 
             //creating shallow copy of chat log and removeing the last two elements (i.e. deleting the last user query and partially generated text from chatbot)
@@ -259,7 +259,7 @@ function ChatWindow() {
         setLoading(true);
 
         // clear any existing buffer for this conversation before starting a new stream
-        clearBuffer(conversationId)
+        removeBuffer(conversationId)
 
             //browser api class which is used to cancel api requests 
             const controller = new AbortController()
@@ -436,7 +436,7 @@ function ChatWindow() {
         } finally {
             setLoading(false);
             // clear buffer after short delay — gives time for final chatLog update to complete before removing buffer
-            setTimeout(() => clearBuffer(conversationId), 2000)
+            setTimeout(() => removeBuffer(conversationId), 2000)
         }
 
 
