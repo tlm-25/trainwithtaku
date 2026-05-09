@@ -12,7 +12,7 @@ function ChatWindow() {
 
     const [userInput, setUserInput] = useState('');
     const [chatLog, setChatLog] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState({});
     //boolean to check if a chat has been selected or not
     const [chatSelectedFlag,setChatSelectedFlag] = useState(false);
     //list of all chats created by the user
@@ -210,7 +210,7 @@ function ChatWindow() {
         controllerRef.current?.abort()
  
         //reset states
-        setLoading(false)
+        setLoading((prev)=>({...prev, [currentChatID]: false}))
         setUserInput("")
         // clear the buffer for the cancelled conversation
         removeBuffer(currentChatID)
@@ -256,7 +256,7 @@ function ChatWindow() {
         const newChatLog = [...chatLog, userMessage];
         setChatLog(newChatLog);
         setUserInput('');
-        setLoading(true);
+        setLoading((prev)=>({...prev, [conversationId]: true}));
 
         // clear any existing buffer for this conversation before starting a new stream
         removeBuffer(conversationId)
@@ -434,7 +434,7 @@ function ChatWindow() {
             }
             
         } finally {
-            setLoading(false);
+            setLoading((prev)=>({...prev, [conversationId]: false}));
             // clear buffer after short delay — gives time for final chatLog update to complete before removing buffer
             setTimeout(() => removeBuffer(conversationId), 2000)
         }
@@ -538,7 +538,7 @@ function ChatWindow() {
 
                                 {<p className='message-timestamp'>{String(message.timestamp).substring(8,10)+ "/"+ String(message.timestamp).substring(5,7)+"/"+String(message.timestamp).substring(0,4)+" "+String(message.timestamp).substring(11,16)}</p> } 
                                 {/** If the message is from the chatbot (excluding initial greeting)*/}
-                                {(message.type == 'bot' && message.message !=="" && !loading && index > 0)&&(
+                                {(message.type == 'bot' && message.message !=="" && !loading[currentChatID] && index > 0)&&(
                                     <button className='show-sources-button' onClick={()=>{handleShowSources(message.reference_docs)}}>View Sources</button>
 
 
@@ -552,8 +552,8 @@ function ChatWindow() {
                         
                     </div>
 
-                    {!loading && <button className="cancel-query-button" onClick={clearChatHistory}>Clear chat history</button>}
-                    { loading && <button className="cancel-query-button" onClick={handleCancelResponse} type="submit" >Cancel</button>}
+                    {!loading[currentChatID] && <button className="cancel-query-button" onClick={clearChatHistory}>Clear chat history</button>}
+                    { loading[currentChatID] && <button className="cancel-query-button" onClick={handleCancelResponse} type="submit" >Cancel</button>}
                     
                     { userErrorMessage && <div className="cancel-query-button" >{userErrorMessage}</div>}
                     
@@ -564,9 +564,9 @@ function ChatWindow() {
                             value={userInput}
                             onChange={(e) => setUserInput(e.target.value)}
                             placeholder="Enter your question"
-                            disabled={loading ||creatingChat}
+                            disabled={loading[currentChatID] || creatingChat}
                         />
-                        <button className="send-query-button" type="submit" disabled={creatingChat||loading||userInput==""}><i className="fa-solid fa-paper-plane"></i></button>
+                        <button className="send-query-button" type="submit" disabled={creatingChat||loading[currentChatID]||userInput==""}><i className="fa-solid fa-paper-plane"></i></button>
                     </form>
                     
 
