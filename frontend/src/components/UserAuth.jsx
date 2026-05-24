@@ -84,10 +84,7 @@ export default function Authentication (props) {
     const {signUp, login} = useAuth()
 
     async function handleAuthenticate () {
-        //if email empty/invalid, password empty/invalid or less than 6 characters, block it 
-        // if(!email || !email.includes("@") || !password ||password.length < 8 || isAuthenticating) {
-        //     return }
-        
+
             //isAuthenticating is set to try while we are authenticating 
             setIsAuthenticating(true)
             setError(null)
@@ -120,10 +117,11 @@ export default function Authentication (props) {
             else{
                 //login user
                 const loginResponse = await login(email,password)
-    
+                // const data = await loginResponse.json()
+                const message = loginResponse.message
                 
 
-                if(loginResponse.status === 200|| loginResponse.message.toLowerCase().includes("success") ){
+                if(loginResponse.status === 200|| message.toLowerCase().includes("success") ){
                     //reset the inputs and close the modal once the user is logged in
                      
                     handleCloseModal()
@@ -133,10 +131,18 @@ export default function Authentication (props) {
 
                 }
 
-                else if (loginResponse.status === 401 || loginResponse.message.toLowerCase().includes("incorrect")){
+                else if (loginResponse.status === 401 || message.toLowerCase().includes("incorrect")){
 
                     setLoginMessage("Incorrect email or password")
                     toast.error(`Incorrect email or password`);
+
+
+                }
+
+
+                else if (loginResponse.status === 429 || message.toLowerCase().includes("too many login attempts")){
+                    setLoginMessage(`${message}}`)
+                    toast.error(`${message}}`)
 
 
                 }
@@ -173,6 +179,10 @@ export default function Authentication (props) {
                 <p className="auth-instruction-text"><strong>{ isRegistration ? 'All requirements must be met (✅)' : 'Sign into your account'}</strong></p>
                 {!isRegistration && loginMessage.toLowerCase().includes("incorrect") && (
                     <p className="auth-instruction-text">❌ Incorrect username or password - Please try again</p>
+                )}
+
+                {!isRegistration && loginMessage.toLowerCase().includes("too many") && (
+                    <p className="auth-instruction-text">❌ {loginMessage}</p>
                 )}
                 
                 {isRegistration && (

@@ -1,7 +1,7 @@
 from pymongo import AsyncMongoClient, MongoClient
 import os 
 from src.config import APP_CONFIG
-MONGO_DB_CONNECTION_STRING = APP_CONFIG.database.mongo_db_connection_string
+MONGO_DB_CONNECTION_STRING = APP_CONFIG.database.mongo_db_connection_string.get_secret_value()
 DATABASE_NAME = APP_CONFIG.database.database_name
 TEST_DATABASE_NAME = APP_CONFIG.database.test_database_name
 import pytest_asyncio

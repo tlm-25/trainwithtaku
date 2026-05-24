@@ -98,3 +98,10 @@ MEAL_PLANNING_PROMPT = """
 
 
 """
+
+
+SUMMARISE_CHAT_HISTORY_PROMPT =  """Summarise in the third person the chat history: {chat_history} between a client  and a fitness coach and particularly the last client query which will reference context in the chat history, \
+Always return a response as if you are the user and NEVER return a response to the final user question.
+Preserve: user goals, time/location constraints, fitness level, any injuries/constraints, key advice given, agreed plans if provided in the chat history.
+Do not make up any information that is not in the chat history and do not leave out any important information that is in the chat history.
+"""

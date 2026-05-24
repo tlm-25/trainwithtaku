@@ -29,7 +29,9 @@ chatbot:
   top_k: 5
   embedding_model_name: text-embedding-3-large
   llm_version: gpt-4o-mini
-  output_token_limit: 2000
+  output_token_limit: 1000
+  max_n_messages_in_history: 8
+
 
 auth:
   access_token_expire_minutes: 15
@@ -39,3 +41,24 @@ auth:
 domain:
   frontend_domain_dev: http://localhost:5173
   frontend_domain_prod: trainwithtaku.com
+
+redis_config:
+  host: redis-10505.crce287.eu-west-2-2.ec2.cloud.redislabs.com
+  port: 10505
+  database_name: trainwithtaku-redis-db
+  local_redis_connection_string: "redis://localhost:6379"
+
+  rate_limits:
+    login_limit: "10/5minutes"
+    chat_limit: "10/1hour"
+    sign_up_limit: "5/minute"
+    send_password_change_limit: "5/minute"
+    reset_password_limit: "5/minute"
+
+
+  
+
+
+
+
+

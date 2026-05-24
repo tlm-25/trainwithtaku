@@ -120,7 +120,12 @@ def format_documents_for_prompt(documents:list[Document])->str:
     :rtype: str
     '''
 
-    return "\n\n".join([doc.page_content for doc in documents])
+    for i in range(len(documents)):
+        documents[i].page_content = f"Source {i+1}: " + documents[i].page_content.strip() + "\n"
+
+    documents_string = " ".join([doc.page_content for doc in documents])
+
+    return " ".join([doc.page_content for doc in documents])
 
 
 

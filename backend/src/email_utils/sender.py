@@ -69,7 +69,7 @@ async def send_email(recipients:list[str],subject:str,context:dict=None,html_fil
             hostname=EMAIL_APP_CONFIG.mail_server,
             port=EMAIL_APP_CONFIG.mail_port,
             username=EMAIL_APP_CONFIG.mail_from,
-            password=EMAIL_APP_CONFIG.mail_password,
+            password=EMAIL_APP_CONFIG.mail_password.get_secret_value(),
             recipients=recipients,
             start_tls=EMAIL_APP_CONFIG.mail_start_tls)
     

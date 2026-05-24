@@ -2,28 +2,39 @@ import {useState, useEffect, useRef} from 'react'
 import '../../index.css'
 import StoredChat from './StoredChat';
 import { getAllStoredChats } from '../../utils';
+
 import { useAuth } from '../../context/AuthContext';
+import { useChatStreamContext } from '../../context/ChatContext';
 import {toast} from 'react-hot-toast'
+import SourcesModal from './SourcesDisplayModal';
 import ReactMarkdown from 'react-markdown'
 function ChatWindow() {
 
     const [userInput, setUserInput] = useState('');
     const [chatLog, setChatLog] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState({});
     //boolean to check if a chat has been selected or not
     const [chatSelectedFlag,setChatSelectedFlag] = useState(false);
     //list of all chats created by the user
     const [allCreatedChats,setAllCreatedChats] = useState([]);
 
-    //the conversation id of the current selected chat (not the conversation id of the backend)
-    const [currentChatID,setCurrentChatID] = useState(null)
+    /*the conversation id of the current selected chat (not the conversation id of the backend)
+     triggers rerender when active chat changes. Need so tha UI correctly highlights selected chat...
+    and show the correct messages*/
+
+    const [currentChatID,setCurrentChatID] = useState(null); 
+    
+    /* Check if current chat ID has been changed - used to detect a change before rerender */
+    const currentChatIDRef = useRef(null);
+
     //check if user is currently creating a chat or not
     const [creatingChat, setCreatingChat] = useState(false)
 
-    const currentChatIDRef = useRef(null)
+    const [showSourcesModal,setShowSourcesModal] = useState(false)
 
-    //using useRef instead of useState to update value of streamed content without re-rendering
-    const streamedTextRef = useRef("");
+    const [userErrorMessage,setUserErrorMessage] = useState("")
+
+
 
     const chatWindowBottomRef = useRef(null);
 
@@ -39,10 +50,15 @@ function ChatWindow() {
     const controllerRef = useRef(false)
 
     //tracking if user has pressed the cancel button
-    const cancelledRef = useRef(null)
+    const cancelledRef = useRef(null);
 
     const {globalUser,logout,fetchWithAuth} = useAuth()
+
+    // consume chat stream context - buffer streams per conversation so switching chats mid-stream doesn't lose data
+    const { appendStringToBuffer, finalizeBuffer, removeBuffer, bufferRef } = useChatStreamContext()
     const [sidebarOpen, setSidebarOpen] = useState(false)
+
+    const [messageSources,setMessageSources] = useState("")
     // Load chat history for current selected chat
     useEffect(() => {
 
@@ -57,15 +73,31 @@ function ChatWindow() {
 
 
          getAllStoredChats(setAllCreatedChats,fetchWithAuth);
+         console.log(allCreatedChats)
         
 
     },[])
 
 
-    
-    
+    useEffect(()=>{
+
+        // mirrors currentChatID state so the async stream loop can read the latest value without a stale closure
+
+        currentChatIDRef.current = currentChatID;
+
+    },[currentChatID])
 
 
+    async function handleShowSources (sources) {
+
+        // handle showing the references
+
+        setShowSourcesModal(true); 
+        setMessageSources(sources)
+
+
+
+    }
 
 
     //every time a new message is in the chat, or a different chat is selected, scroll to the bottom of the chat area (everytime chatlog changes)
@@ -105,8 +137,7 @@ function ChatWindow() {
             });
 
             if(response.ok){
-                // console.log(currentChatID)
-                // console.log(response)
+
                 // setChatLog([{ type: 'bot', message: userInput,timestamp:String(now)])
                 //get the specific chat from the chat history 
                 const response = await fetchWithAuth(`/api/get_chat_history`,{
@@ -119,6 +150,7 @@ function ChatWindow() {
 
                 setChatLog([chatData[0]])
                 await getAllStoredChats(setAllCreatedChats,fetchWithAuth)
+                
                 
             }
             
@@ -178,9 +210,10 @@ function ChatWindow() {
         controllerRef.current?.abort()
  
         //reset states
-        setLoading(false)
+        setLoading((prev)=>({...prev, [currentChatID]: false}))
         setUserInput("")
-        streamedTextRef.current = ""
+        // clear the buffer for the cancelled conversation
+        removeBuffer(currentChatID)
         setChatLog((prev) => {
 
             //creating shallow copy of chat log and removeing the last two elements (i.e. deleting the last user query and partially generated text from chatbot)
@@ -217,17 +250,16 @@ function ChatWindow() {
         if (!userInput.trim()) return; 
 
         const userMessage = { type: 'user', message: userInput,timestamp:String(now) };
-        console.log(now)
+
         
         // update chat log array 
         const newChatLog = [...chatLog, userMessage];
         setChatLog(newChatLog);
         setUserInput('');
-        setLoading(true);
+        setLoading((prev)=>({...prev, [conversationId]: true}));
 
-        //reset ref
-
-        streamedTextRef.current = ""
+        // clear any existing buffer for this conversation before starting a new stream
+        removeBuffer(conversationId)
 
             //browser api class which is used to cancel api requests 
             const controller = new AbortController()
@@ -301,35 +333,61 @@ function ChatWindow() {
                         const chunkValue = decoder.decode(value,{stream: true})
 
                         
-                        //update the streamed text reference
-                        streamedTextRef.current += chunkValue
-                        //update the chatlog
-                        setChatLog((prev)=>{
-                            
-                            //creating shallow copy of chat log - avoid mutating state directly for non-primitive typ
-                            const updatedChatlog = [...prev]
+                        /*chunk is either chatbot answer text or a __REFS__ chunk containing the retrieved document references.
+                        Everything after __REFS__ is reference text, sent as a separate final chunk after the answer finishes streaming.
+                        */
+                        if(!chunkValue.includes("__REFS__")){
 
-                            //get the latest entry of the chat log (will have the blank text)
-                            const latestMessage = updatedChatlog[updatedChatlog.length - 1]
+                            // always append to buffer regardless of which chat is active - prevents data loss when switching chats mid-stream
+                            appendStringToBuffer(conversationId, chunkValue)
 
-                            //update the last entry with the streamed text
-                            if(latestMessage.type === 'bot'){
+                            // only update chatlog display if this is the currently viewed chat
+                            if(currentChatIDRef.current===conversationId){
+                                setChatLog((prev)=>{
 
-                                //filling in  the empty string with the text retrieved from the front end
-                                updatedChatlog[updatedChatlog.length - 1] = {
-                                    ...latestMessage,
-                                    message: streamedTextRef.current
-                                }
+                                    //creating shallow copy of chat log - avoid mutating state directly for non-primitive type
+                                    const updatedChatlog = [...prev]
 
+                                    //get the latest entry of the chat log (will have the blank text)
+                                    const latestMessage = updatedChatlog[updatedChatlog.length - 1]
+
+                                    //update the last entry with the accumulated buffer text for this conversation
+                                    if(latestMessage.type === 'bot'){
+                                        updatedChatlog[updatedChatlog.length - 1] = {
+                                            ...latestMessage,
+                                            message: bufferRef.current[conversationId]?.text ?? ""
+                                        }
+                                    }
+
+                                    return updatedChatlog
+                                });
                             }
+                        }
 
-                            
-                            
+                        else {
+                            //Once the chatbot has finished streaming its answer
 
-                            return updatedChatlog
+                            //if chunk includes "__REFS__" string, this means the chunk is the retrieved documents reference and not part of the chatbot answer
+                            const stringFormattedDocuments = chunkValue.split("__REFS__")[1]
 
-                            
-                        });
+                            // finalize the buffer with sources so they are recoverable if user switches back to this chat
+                            finalizeBuffer(conversationId, stringFormattedDocuments)
+
+                            if(currentChatIDRef.current === conversationId){
+                                setChatLog((prev)=>{
+                                    const updatedChatlog = [...prev]
+                                    const latestMessage = updatedChatlog[updatedChatlog.length - 1]
+                                    if(latestMessage.type === 'bot'){
+                                        updatedChatlog[updatedChatlog.length - 1] = {
+                                            ...latestMessage,
+                                            reference_docs: stringFormattedDocuments
+                                        }
+                                    }
+                                    return updatedChatlog
+                                })
+                          }
+                        }
+                        
 
                     }
 
@@ -342,12 +400,24 @@ function ChatWindow() {
                 const finalChat = [...prev];
                 // sessionstorage.setItem('chatLog', JSON.stringify(finalChat));
                 return finalChat;
-      });
+                });
                 
 
             }
 
             else if (!response.ok) {
+                
+
+                //if we get a rate limit error
+                if(response.status === 429){
+                    const data = await response.json()
+                    console.log
+                    const message = data.message
+                    
+                    setUserErrorMessage(`${message}`)
+                    toast.error(message)
+                    return
+                }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
@@ -364,7 +434,9 @@ function ChatWindow() {
             }
             
         } finally {
-            setLoading(false);
+            setLoading((prev)=>({...prev, [conversationId]: false}));
+            // clear buffer after short delay — gives time for final chatLog update to complete before removing buffer
+            setTimeout(() => removeBuffer(conversationId), 2000)
         }
 
 
@@ -380,7 +452,7 @@ function ChatWindow() {
     const handleSubmit = async (event) => {
         event.preventDefault();
         
-        // //if chat not yet selected (i.e.e user just starts typing)
+        // //if chat not yet selected (i.e. user just starts typing without selecting chat first)
         if(!chatSelectedFlag){
             //create a new chat id 
             const newChatID = await createNewChat(event)
@@ -395,10 +467,13 @@ function ChatWindow() {
 
             if (response.ok){
                 const data = await response.json()
+                console.log(data)
+                //set the chatlog to the current selected chat
                 setChatLog(data)
                 setCurrentChatID(newChatID)
-                console.log("generating chat")
-                console.log(newChatID)
+                currentChatIDRef.current = newChatID  // immediate sync
+
+
                 // send message to newly create chat, stream answer from chatbot
                 await streamChatbotAnswer(newChatID)
                 
@@ -430,6 +505,7 @@ function ChatWindow() {
     return (
 
             <div className='main-chatbot-container'>
+                <SourcesModal showSourcesModal={showSourcesModal} setShowSourcesModalFunction={setShowSourcesModal} sourcesForCurrentMessage={messageSources}/>
                 <button className="hamburger-button" onClick={() => setSidebarOpen(!sidebarOpen)}>
                     {sidebarOpen ? '✕' : '☰'}
                 </button>
@@ -444,7 +520,7 @@ function ChatWindow() {
                         
                         {allCreatedChats.map((storedChat,index)=>(
 
-                                <StoredChat key={String(index)+storedChat.conversation_id} index = {index+1} conversationId = {storedChat.conversation_id} setChatLogFunction={setChatLog} setCurrentChatIDFunction={setCurrentChatID} currentChatID={currentChatID} setAllStoredChatsFunction={setAllCreatedChats} currentChatLogState={chatLog} chatSelectedFlag={chatSelectedFlag} setChatSelectedFlagFunction={setChatSelectedFlag} allStoredChatsState={allCreatedChats}/>
+                                <StoredChat key={String(index)+storedChat.conversation_id} index = {index+1} conversationId = {storedChat.conversation_id} setChatLogFunction={setChatLog} setCurrentChatIDFunction={setCurrentChatID} currentChatID={currentChatID} setAllStoredChatsFunction={setAllCreatedChats} currentChatLogState={chatLog} chatSelectedFlag={chatSelectedFlag} setChatSelectedFlagFunction={setChatSelectedFlag} allStoredChatsState={allCreatedChats} currentChatRef = {currentChatIDRef}/>
                             ))}
 
                     </div>
@@ -461,6 +537,12 @@ function ChatWindow() {
                                 </div>
 
                                 {<p className='message-timestamp'>{String(message.timestamp).substring(8,10)+ "/"+ String(message.timestamp).substring(5,7)+"/"+String(message.timestamp).substring(0,4)+" "+String(message.timestamp).substring(11,16)}</p> } 
+                                {/** If the message is from the chatbot (excluding initial greeting)*/}
+                                {(message.type == 'bot' && message.message !=="" && !loading[currentChatID] && index > 0)&&(
+                                    <button className='show-sources-button' onClick={()=>{handleShowSources(message.reference_docs)}}>View Sources</button>
+
+
+                                )}
         
                             </div>
                         
@@ -470,8 +552,11 @@ function ChatWindow() {
                         
                     </div>
 
-                    {!loading && <button className="cancel-query-button" onClick={clearChatHistory}>Clear chat history</button>}
-                    { loading && <button className="cancel-query-button" onClick={handleCancelResponse} type="submit" >Cancel</button>}
+                    {!loading[currentChatID] && <button className="cancel-query-button" onClick={clearChatHistory}>Clear chat history</button>}
+                    { loading[currentChatID] && <button className="cancel-query-button" onClick={handleCancelResponse} type="submit" >Cancel</button>}
+                    
+                    { userErrorMessage && <div className="cancel-query-button" >{userErrorMessage}</div>}
+                    
                     <form onSubmit={handleSubmit} className="chat-form">
 
                         <input
@@ -479,9 +564,9 @@ function ChatWindow() {
                             value={userInput}
                             onChange={(e) => setUserInput(e.target.value)}
                             placeholder="Enter your question"
-                            disabled={loading ||creatingChat}
+                            disabled={loading[currentChatID] || creatingChat}
                         />
-                        <button className="send-query-button" type="submit" disabled={creatingChat||loading||userInput==""}><i className="fa-solid fa-paper-plane"></i></button>
+                        <button className="send-query-button" type="submit" disabled={creatingChat||loading[currentChatID]||userInput==""}><i className="fa-solid fa-paper-plane"></i></button>
                     </form>
                     
 

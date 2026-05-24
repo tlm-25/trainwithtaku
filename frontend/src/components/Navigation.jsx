@@ -58,12 +58,11 @@ function Navigation(props){
                                 
                                 <ul>
                                     <li><Link to="/" className="nav-link">Home</Link></li>
-                                    <li><Link to="#" className="nav-link">About</Link></li>
-                                    <li><Link to="#" className="nav-link">Shop</Link></li>
-                                    <li><Link to="#" className="nav-link">Blog</Link></li>
+                                    <li><Link to="#" className="nav-link">Programs 📋</Link></li>
+                                    <li><Link to="#" className="nav-link">Online Coaching 💪🏽</Link></li>
+                                    <li><Link to="#" className="nav-link"> Taku's Tips ✍🏽</Link></li>
                                     <li><Link to="#" className="nav-link">Contact</Link></li>
                                     {globalUser&&<li><Link to="/monyai" className="nav-link"> MonyAI</Link></li>}
-                                    <li><Link to="#" className="nav-link"> Stats</Link></li>
                                     <div></div>
                                     
                                     {globalUser ? (
@@ -72,7 +71,7 @@ function Navigation(props){
 
                                 
                                 
-                                    <li onClick={()=>{setShowModal(true)}}><a href="#" className='nav-link'>Account 👤</a></li>)}                                
+                                    <li onClick={()=>{setShowModal(true)}}><a href="#" className='nav-link'>Login/Sign Up 👤</a></li>)}                                
                                 </ul>
                                 
 

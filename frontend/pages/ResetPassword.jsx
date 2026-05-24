@@ -5,10 +5,10 @@ function ResetPassword() {
     return (
         <>
 
-            <Layout>
-                <ResetPasswordForm/>
+
+                <ResetPasswordForm />
                 
-            </Layout>
+
         
         </>
 
@@ -16,4 +16,4 @@ function ResetPassword() {
     )
 
 }
-export default ForgotPassword;
+export default ResetPassword;

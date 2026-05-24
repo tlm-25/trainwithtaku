@@ -1,5 +1,4 @@
 #Tests for uploading to vector store
-from src.main import app
 from src.database.connection import create_or_get_database
 # from src.config import VECTOR_STORE_COLLECTION_NAME, TEST_DATABASE_NAME, MONGO_DB_CONNECTION_STRING
 from src.database.vector_store import upload_to_vector_store, generate_documents
@@ -8,7 +7,7 @@ import pytest
 
 from src.config import APP_CONFIG
 
-MONGO_DB_CONNECTION_STRING = APP_CONFIG.database.mongo_db_connection_string
+MONGO_DB_CONNECTION_STRING = APP_CONFIG.database.mongo_db_connection_string.get_secret_value()
 VECTOR_STORE_COLLECTION_NAME = APP_CONFIG.database.vector_store_collection_name
 TEST_DATABASE_NAME  = APP_CONFIG.database.test_database_name
 
@@ -30,6 +29,7 @@ async def create_or_get_test_database():
 
 
 @pytest.mark.asyncio
+@pytest.mark.slow
 async def test_succesful_document_upload_web():
     
     test_mongo_database = await create_or_get_test_database().__anext__()
@@ -45,6 +45,7 @@ async def test_succesful_document_upload_web():
     assert new_collection_length > original_collection_length
 
 @pytest.mark.asyncio
+@pytest.mark.slow
 async def test_succesful_document_upload_pdf():
     
     test_mongo_database = await create_or_get_test_database().__anext__()

@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 import yaml
 from pydantic_settings import BaseSettings
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, SecretStr
 #get environment variables from dotenv file
 load_dotenv()
 
@@ -12,8 +12,10 @@ load_dotenv()
 #Assumes the config.yaml is stored in the root directory (same level as src and test folders), and we are running the code from root directory. If this is not the case, the YAML_CONFIG_PATH variable should be updated to reflect the correct path to the config.yaml file
 YAML_CONFIG_PATH = "config.yaml"
 
-# secrets injected into APP_CONFIG at load time
+# secrets injected into APP_CONFIG from env variables at load time  
 MONGO_DB_CONNECTION_STRING = os.getenv("MONGO_DB_CONNECTION_STRING")
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+TEST_REDIS_PASSWORD = os.getenv("TEST_REDIS_PASSWORD")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
@@ -35,19 +37,22 @@ class EmailConfig(BaseModel):
     mail_from_username:str
     mail_server:str
     mail_port:int
-    mail_password:str
+    # secret
+    mail_password:SecretStr
     mail_start_tls:bool
     mail_ssl_tls:bool
     test_user_email:str
     dev_email:str
-    test_user_password:str
+    # secret
+    test_user_password:SecretStr
     welcome_email_file_name:str
 
 
 
 class DatabaseConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
-    mongo_db_connection_string:str
+    # secret 
+    mongo_db_connection_string:SecretStr
     database_name: str
     test_database_name: str
     user_accounts_collection_name: str
@@ -62,17 +67,21 @@ class DatabaseConfig(BaseModel):
 
 class MonyaiChatbotConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
-    openai_api_key:str
+    # secret 
+    openai_api_key:SecretStr
     embedding_model_name:str
     llm_version:str
     top_k:int
     test_conversation_id:str
     output_token_limit:int
+    max_n_messages_in_history:int
 
 class AuthTokenConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
-    jwt_secret_key:str
-    jwt_algorithm:str
+    # secret 
+    jwt_secret_key:SecretStr
+    #  secret
+    jwt_algorithm:SecretStr
     access_token_expire_minutes:int
     refresh_token_expire_days:int
     reset_password_link_expire_minutes:int
@@ -82,6 +91,22 @@ class DomainConfig(BaseModel):
     frontend_domain_dev:str 
     frontend_domain_prod:str
 
+class RateLimitConfig(BaseModel):
+    login_limit: str
+    chat_limit: str
+    sign_up_limit: str
+    send_password_change_limit: str
+    reset_password_limit: str
+
+class RedisConfig(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    redis_connection_string:SecretStr
+    local_redis_connection_string:str
+    host:str
+    port:int
+    database_name:str
+    rate_limits:RateLimitConfig
+
 
 
 
@@ -89,6 +114,7 @@ class DomainConfig(BaseModel):
 
 class ProjectConfig(BaseSettings):
     model_config = ConfigDict(frozen=True)
+
     ''' Represent project configuration parameters as Pydantic model for type validation and ease of access '''
     env_config: EnvConfig
     email: EmailConfig
@@ -96,6 +122,7 @@ class ProjectConfig(BaseSettings):
     chatbot: MonyaiChatbotConfig
     auth: AuthTokenConfig
     domain:DomainConfig
+    redis_config:RedisConfig
 
 
 
@@ -146,11 +173,26 @@ def load_config_from_yaml(yaml_config_path:str)->ProjectConfig:
     config_dict["auth"]["jwt_algorithm"] = JWT_ALGORITHM
 
     config_dict["env_config"]=  env_config.model_dump()
+
+    # get redis databse details 
+    redis_host = config_dict["redis_config"]["host"]
+
+   
+    redis_port = config_dict["redis_config"]["port"] 
+
+    
+    # construct connection string
+    redis_connection_string = f"redis://default:{REDIS_PASSWORD}@{redis_host}:{redis_port}"
+
+    
+    config_dict["redis_config"]["redis_connection_string"] = redis_connection_string
+
+
     return ProjectConfig(**config_dict)
 
     
-    
-APP_CONFIG = load_config_from_yaml(YAML_CONFIG_PATH)
+# load config settings to use in app    
+APP_CONFIG = load_config_from_yaml(YAML_CONFIG_PATH)  
 
 
 

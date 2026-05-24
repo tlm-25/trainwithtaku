@@ -99,6 +99,7 @@ class ChatMessage(BaseModel):
     message:str
     type:str
     timestamp:str
+    reference_docs:str|None=None
 
 
 class Conversation(BaseModel):

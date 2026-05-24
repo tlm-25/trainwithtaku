@@ -2,12 +2,12 @@ from src.search.retrieval import  CustomAsyncMongoDBAtlasRetriever
 
 from src.config import APP_CONFIG
 
-MONGO_DB_CONNECTION_STRING = APP_CONFIG.database.mongo_db_connection_string
+MONGO_DB_CONNECTION_STRING = APP_CONFIG.database.mongo_db_connection_string.get_secret_value()
 VECTOR_STORE_COLLECTION_NAME = APP_CONFIG.database.vector_store_collection_name
 TEST_MONGO_VECTOR_INDEX_NAME = APP_CONFIG.database.test_mongo_vector_index_name
 TEST_DATABASE_NAME  = APP_CONFIG.database.test_database_name
 TEST_USER_EMAIL = APP_CONFIG.email.test_user_email
-TEST_USER_PASSWORD = APP_CONFIG.email.test_user_password
+TEST_USER_PASSWORD = APP_CONFIG.email.test_user_password.get_secret_value()
 TOP_K = APP_CONFIG.chatbot.top_k
 
 

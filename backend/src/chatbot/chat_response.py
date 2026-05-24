@@ -1,8 +1,10 @@
 from src.search.retrieval import CustomAsyncMongoDBAtlasRetriever, create_training_retrieval_query_from_form_and_user_query, format_documents_for_prompt
 from src.chatbot.chat_history import convert_chat_history_to_langchain_format
 from src.config import APP_CONFIG
+import json
+import logging
 LLM_VERSION = APP_CONFIG.chatbot.llm_version
-OPENAI_API_KEY = APP_CONFIG.chatbot.openai_api_key
+OPENAI_API_KEY = APP_CONFIG.chatbot.openai_api_key.get_secret_value()
 VECTOR_STORE_COLLECTION_NAME = APP_CONFIG.database.vector_store_collection_name
 MONGO_VECTOR_INDEX_NAME = APP_CONFIG.database.mongo_vector_index_name
 CHAT_COLLECTION_NAME = APP_CONFIG.database.chat_collection_name
@@ -13,16 +15,21 @@ from src.prompts import TRAINING_PROGRAM_PROMPT_CONCISE
 from langchain_core.prompts.chat import ChatPromptTemplate
 
 from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI 
 from langchain_core.messages import  HumanMessage
 from pymongo.asynchronous.collection import AsyncCollection
 
 from datetime import datetime
+
+
 CHAT_MODEL = ChatOpenAI(
     model=LLM_VERSION,
     openai_api_key=OPENAI_API_KEY,
-    temperature=0.1
+    temperature=0
 
 )
+
+# General LLM Wrapper Class 
 
 
 TRAINING_RETRIEVAL_QUERY_TEMPLATE = """
@@ -83,8 +90,16 @@ async def stream_chatbot_response(user_query:str,chat_history:list[dict],vector_
     #get the relevant documents
     retrieved_documents = await async_mongodb_retriever.ainvoke(input=retrieval_query)
 
-    string_formatted_documents = format_documents_for_prompt(documents=retrieved_documents)
+    print(retrieved_documents)
+    logging.info(retrieved_documents)
 
+    references = [doc.page_content  for doc in retrieved_documents]
+    
+    references_json = json.dumps(references)
+
+    string_formatted_documents = format_documents_for_prompt(documents=retrieved_documents)
+    
+    logging.info(f"Retrieved Documents: {string_formatted_documents}")
     
 
     chat_prompt = ChatPromptTemplate.from_messages([("system",TRAINING_PROGRAM_PROMPT_CONCISE)])
@@ -117,11 +132,12 @@ async def stream_chatbot_response(user_query:str,chat_history:list[dict],vector_
         text_chunk = chunk.content
         accumulated_text+=chunk.content
         yield text_chunk
-    
-
+    print(retrieved_documents)
+    # use __REFS__ as a reference for the frontend to be able to distinguish references text from the message text 
+    yield f"__REFS__{string_formatted_documents}"
      # store the chatbot response in the database once generated 
 
-    final_generated_message = ChatMessage(message=accumulated_text,timestamp=str(datetime.now()),type='bot')
+    final_generated_message = ChatMessage(message=accumulated_text,timestamp=str(datetime.now()),type='bot',reference_docs=string_formatted_documents)
    
     add_message_to_db = await conversation_collection.update_one(
             {"conversation_id": conversation_id},
