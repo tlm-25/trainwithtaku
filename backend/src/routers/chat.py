@@ -73,17 +73,53 @@ def create_chat_router(limiter:Limiter)->APIRouter:
         
         '''
 
+
+        # check database for conversation with this specific conversation_id
+
         main_database = database
         vector_store_collection = main_database[VECTOR_STORE_COLLECTION_NAME]
         conversation_collection = main_database[CHAT_COLLECTION_NAME]
 
         user_message = chat_request.user_message
         user_query = user_message.message
+
+        # checking who current user is
+        current_user_email = user["email"]
+        logging.info(f" [CHAT] Chat request by {current_user_email}")
+        print(f" [CHAT] Chat request by {current_user_email}")
+
+        # get the conversation id that they made the request for
+        conversation_id = chat_request.conversation_id
+
+        # find conversation document with corresponding conversation id (it contains the associated user)
+        conversation = await conversation_collection.find_one(
+            filter={"conversation_id": conversation_id},
+            projection={"_id":True,"conversation_id":True,"email":True}
+            
+        )
+
+        # if conversation not found return this error
+
+        if conversation is None:
+            return JSONResponse(content="Conversation not found", status_code=404)
+        
+        convo_owner = conversation["email"]
+
+        # compare email of current logged in user and email assocoated with convo id
+        # ownership ensuring that the current user sending the message is actually the one who created the conversation
+        # this minimises chance of message bleed between users
+        
+        if not convo_owner == current_user_email:
+            logging.error(f"{current_user_email}'s message directed to conversation they do not own. ")
+            return JSONResponse(content="Sent to wrong convo. Please try again",status_code=403)
+        
+
+
     
 
         #  INSERT USER QUERY INTO CONVERSATION
         add_message_to_db = await conversation_collection.update_one(
-                {"conversation_id": chat_request.conversation_id},
+                {"conversation_id": conversation_id},
                 {"$push": {"messages": user_message.model_dump()}},
                 upsert=True
                 )
