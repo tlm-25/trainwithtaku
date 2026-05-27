@@ -24,7 +24,7 @@ VECTOR_STORE_COLLECTION_NAME = APP_CONFIG.database.vector_store_collection_name
 
 RATE_LIMIT_CONFIG = APP_CONFIG.redis_config.rate_limits
 
-router = APIRouter()
+router = APIRouter(prefix="/api")
 
 def create_chat_router(limiter:Limiter)->APIRouter:
     '''

@@ -2,6 +2,7 @@ import {useState, useEffect, useRef} from 'react'
 import '../../index.css'
 import StoredChat from './StoredChat';
 import { getAllStoredChats } from '../../utils';
+import { BASE_URL } from '../../api';
 
 import { useAuth } from '../../context/AuthContext';
 import { useChatStreamContext } from '../../context/ChatContext';
@@ -229,7 +230,7 @@ function ChatWindow() {
         }); 
 
         //get cancel endpoint (with specific query id)
-        const cancelEndpoint = `/api/cancel_response/${queryID}`
+        const cancelEndpoint = `${BASE_URL}/api/cancel_response/${queryID}`
         fetch(cancelEndpoint,{
             method: "POST"
         }).then(res=>res.json()).then(console.log("cancelled")).catch(err => console.error("Failed to cancel", err));
