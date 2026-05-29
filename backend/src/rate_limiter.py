@@ -118,15 +118,15 @@ async def custom_rate_limit_handler(request:Request,exc:RateLimitExceeded):
     logging.info(f"Allowed to makes request again at {reset_time}")
     
     RATE_LIMIT_MESSAGES = {
-    "/login_with_access_token": f"Too many login attempts. Please try again {retry_message} ",
+    "/api/login_with_access_token": f"Too many login attempts. Please try again {retry_message} ",
     
-    "/add_user": f"Too many sign up attempts. Please try again {retry_message}",
+    "/api/add_user": f"Too many sign up attempts. Please try again {retry_message}",
     
-    "/send_change_password_link": f"Too many password reset requests. Please try again {retry_message}",
+    "/api/send_change_password_link": f"Too many password reset requests. Please try again {retry_message}",
     
-    "/reset_password": f"Too many password reset attempts. Please try again {retry_message}",
+    "/api/reset_password": f"Too many password reset attempts. Please try again {retry_message}",
     
-    "/chat": f"Max message allowance reached. Allowance resets {retry_message}"
+    "/api/chat": f"Max message allowance reached. Allowance resets {retry_message}"
     }
 
     rl_message = RATE_LIMIT_MESSAGES.get(request.url.path, "Too many requests. Please try again later")
