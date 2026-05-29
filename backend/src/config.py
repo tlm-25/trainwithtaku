@@ -21,7 +21,7 @@ JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
 TEST_USER_PASSWORD = os.getenv("TEST_USER_PASSWORD")
 TEST_CONVERSATION_ID = os.getenv("TEST_CONVERSATION_ID")
-
+MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
 
 class EnvConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
@@ -161,7 +161,7 @@ def load_config_from_yaml(yaml_config_path:str)->ProjectConfig:
         config_dict = yaml.safe_load(f)
 
     # inject secrets from environment variables into config dict (these are not stored in YAML for security)
-    config_dict["email"]["mail_password"] = os.getenv("MAIL_PASSWORD")
+    config_dict["email"]["mail_password"] = MAIL_PASSWORD
     config_dict["email"]["test_user_password"] = TEST_USER_PASSWORD
     config_dict["database"]["mongo_db_connection_string"] = MONGO_DB_CONNECTION_STRING
 

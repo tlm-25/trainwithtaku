@@ -57,4 +57,5 @@ jobs:
                 TEST_CONVERSATION_ID: ${{ secrets.TEST_CONVERSATION_ID }}
                 REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
                 TEST_REDIS_PASSWORD: ${{ secrets.TEST_REDIS_PASSWORD }}
+                MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
                 APP_ENVIRONMENT: dev
