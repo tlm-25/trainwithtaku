@@ -1,4 +1,4 @@
-from src.database.connection import get_mongo_client, create_or_get_database, create_or_get_collection
+﻿from src.database.connection import get_mongo_client, create_or_get_database, create_or_get_collection
 from src.chatbot.chat_history import get_all_stored_user_chats
 from src.chatbot.chat_response import stream_chatbot_response
 from src.schemas import  ClientForm
@@ -44,14 +44,14 @@ test_app.state.ip_rate_limiter.enabled = False
 
 @pytest.fixture
 def test_client():
-    # Wraps the module-level test_app — never creates a new instance
+    # Wraps the module-level test_app â€” never creates a new instance
     return TestClient(app=test_app)
 
 
 @pytest.fixture
 def login_test_user(test_client):
     login_response = test_client.post(
-        url="/login_with_access_token",
+        url="/api/login_with_access_token",
         data={"username": TEST_USER_EMAIL, "password": TEST_USER_PASSWORD}
     )
     assert login_response.status_code == 200, (
@@ -108,13 +108,15 @@ async def owned_conversation_id():
 
 
 
+
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_user_chats_retrieval(test_client, login_test_user):
     '''
         Test retrieval of stored user chats from the database
         Assumes there is pre-existing chat data for the test user
     '''
-    response_1 = test_client.post(url="/get_stored_user_chats", headers=login_test_user)
+    response_1 = test_client.post(url="/api/get_stored_user_chats", headers=login_test_user)
     stored_chats = response_1.json()
 
     assert response_1.status_code == 200
@@ -126,6 +128,8 @@ async def test_user_chats_retrieval(test_client, login_test_user):
     assert "messages" in stored_chats[0].keys()
 
 
+
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_get_specific_stored_chat(test_client, login_test_user):
     '''
@@ -133,7 +137,7 @@ async def test_get_specific_stored_chat(test_client, login_test_user):
         Assumes there is pre-existing chat data for the test user
     '''
     response = test_client.post(
-        url="/get_chat_history",
+        url="/api/get_chat_history",
         headers=login_test_user,
         json={"conversation_id": TEST_CONVERSATION_ID}
     )
@@ -142,18 +146,21 @@ async def test_get_specific_stored_chat(test_client, login_test_user):
     assert "hi" in response.json()[0]["message"].lower()  
 
 
+
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_create_new_chat(test_client, login_test_user):
     '''
         test successful creation of new chat
     '''
-    create_new_chat_response = test_client.post(url="/create_new_chat", headers=login_test_user)
+    create_new_chat_response = test_client.post(url="/api/create_new_chat", headers=login_test_user)
     create_new_chat_response_json = create_new_chat_response.json()
 
     assert create_new_chat_response.status_code == 201
     assert "conversation_id" in create_new_chat_response_json
 
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 @pytest.mark.llm_call
 async def test_stream_chatbot_response(test_client, test_client_form, login_test_user, owned_conversation_id):
@@ -170,7 +177,7 @@ async def test_stream_chatbot_response(test_client, test_client_form, login_test
         {"type": "bot", "message": "Hi, I'm Monyai your fitness assistant! Ask me any fitness or nutrition related questions.", 'timestamp': '2026-01-01 11:37:11.409816'}
     ]
 
-    with test_client.stream("POST", "/chat", json={
+    with test_client.stream("POST", "/api/chat", json={
         "user_message": user_message,
         "chat_history": test_chat_history,
         "client_form": test_client_form.model_dump(),
@@ -183,6 +190,8 @@ async def test_stream_chatbot_response(test_client, test_client_form, login_test
         assert "__REFS__" in chunks[0]
 
 
+
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_attempt_chatbot_not_authenticated(test_client, test_client_form):
     '''
@@ -202,7 +211,7 @@ async def test_attempt_chatbot_not_authenticated(test_client, test_client_form):
 
     dummy_conversation_id = str(uuid.uuid4())
 
-    response = test_client.post("/chat", json={
+    response = test_client.post("/api/chat", json={
         "user_message": user_message,
         "chat_history": test_chat_history,
         "client_form": test_client_form.model_dump(),
@@ -213,6 +222,8 @@ async def test_attempt_chatbot_not_authenticated(test_client, test_client_form):
     assert "not authenticated" in response.json()["detail"].lower()
 
 
+
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_chat_ownership_check(test_client, login_test_user, test_client_form):
     """
@@ -231,7 +242,7 @@ async def test_chat_ownership_check(test_client, login_test_user, test_client_fo
 
     user_message = {'message': "test", 'timestamp': str(datetime.now()), 'type': 'user'}
 
-    with test_client.stream("POST", "/chat", json={
+    with test_client.stream("POST", "/api/chat", json={
         "user_message": user_message,
         "chat_history": [],
         "client_form": test_client_form.model_dump(),
@@ -244,3 +255,5 @@ async def test_chat_ownership_check(test_client, login_test_user, test_client_fo
         await mongo_client[TEST_DATABASE_NAME][CHAT_COLLECTION_NAME].delete_one(
             {"conversation_id": conversation_id}
         )
+
+

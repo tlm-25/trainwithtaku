@@ -15,6 +15,9 @@ RUN npm install
 
 #copy all files from local directory into container directory (i.e. "app" directory)
 COPY . .
+# declare build arg and expose as env var so Vite can read it during build
+ARG VITE_BASE_URL
+ENV VITE_BASE_URL=$VITE_BASE_URL
 
 RUN npm run build && ls -la /app
 

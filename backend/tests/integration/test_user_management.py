@@ -1,4 +1,4 @@
-
+﻿
 
 from src.app_setup import create_app
 from src.schemas import UserSignUpForm, UserResetPasswordForm
@@ -50,6 +50,7 @@ test_app.dependency_overrides[create_or_get_database] = create_or_get_test_datab
 client = TestClient(app=test_app)
 
     
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_successful_user_sign_up():
     '''
@@ -60,11 +61,12 @@ async def test_successful_user_sign_up():
         user_type = "trainee"
         test_user_details = UserSignUpForm(email=email,password=TEST_USER_PASSWORD,confirm_password=TEST_USER_PASSWORD,user_type=user_type)
         test_user_details_mock_json = test_user_details.model_dump()
-        response =  client.post(url="/add_user",json=test_user_details_mock_json)
+        response =  client.post(url="/api/add_user",json=test_user_details_mock_json)
 
         assert response.status_code == 200
         assert "success" in response.json()["message"].lower()
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_password_confirm_pw_mismatch():
     '''
@@ -75,11 +77,12 @@ async def test_password_confirm_pw_mismatch():
         user_type = "trainee"
         test_user_details = UserSignUpForm(email=email,password=TEST_USER_PASSWORD,confirm_password="Password11!",user_type=user_type)
         test_user_details_mock_json = test_user_details.model_dump()
-        response =  client.post(url="/add_user",json=test_user_details_mock_json)
+        response =  client.post(url="/api/add_user",json=test_user_details_mock_json)
 
         assert response.status_code == 400
 
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_invalid_email_format_user_sign_up():
     '''
@@ -92,12 +95,13 @@ async def test_invalid_email_format_user_sign_up():
         user_type = "trainee"
         test_user_details = UserSignUpForm(email=email,password=TEST_USER_PASSWORD,confirm_password=TEST_USER_PASSWORD,user_type=user_type)
         test_user_details_mock_json = test_user_details.model_dump()
-        response =  client.post(url="/add_user",json=test_user_details_mock_json)
+        response =  client.post(url="/api/add_user",json=test_user_details_mock_json)
 
         assert response.status_code == 422
         assert  isinstance(response.json()["message"],str)
         assert "email" in response.json()["message"].lower() and "invalid" in  response.json()["message"].lower()
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_email_already_exists_sign_up():
     '''
@@ -108,12 +112,13 @@ async def test_email_already_exists_sign_up():
         user_type = "trainee"
         test_user_details = UserSignUpForm(email=TEST_USER_EMAIL,password=TEST_USER_PASSWORD,confirm_password=TEST_USER_PASSWORD,user_type=user_type)
         test_user_details_mock_json = test_user_details.model_dump()
-        response =  client.post(url="/add_user",json=test_user_details_mock_json)
+        response =  client.post(url="/api/add_user",json=test_user_details_mock_json)
         assert response.status_code == 409
         assert "already in use" in response.json()["message"].lower()
         
 
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_successful_login_with_access_token():
     '''
@@ -123,13 +128,14 @@ async def test_successful_login_with_access_token():
         existing_email = TEST_USER_EMAIL
         password = TEST_USER_PASSWORD
 
-        response = client.post(url="/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":TEST_USER_PASSWORD})
+        response = client.post(url="/api/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":TEST_USER_PASSWORD})
         response_json =response.json()
         assert response.status_code == 200
         assert "access_token" in response_json
         assert "token_type" in response_json
 
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_login_incorrect_email():
     '''
@@ -138,11 +144,12 @@ async def test_login_incorrect_email():
     with TestClient(app=test_app) as client:
         # incorrect email for login - does not exist in the test database
         incorrect_email = "exist_email@gmail.com"
-        response = client.post(url="/login_with_access_token",data={"username":incorrect_email,"password":TEST_USER_PASSWORD})
+        response = client.post(url="/api/login_with_access_token",data={"username":incorrect_email,"password":TEST_USER_PASSWORD})
         response_json =response.json()
         assert response.status_code == 401
         assert "incorrect" in response_json["message"].lower()
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_login_incorrect_password():
     '''
@@ -152,11 +159,12 @@ async def test_login_incorrect_password():
     with TestClient(app=test_app) as client:
         #incorrect password for the user in the test database
         incorrect_password = "incorrect_password"
-        response = client.post(url="/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":incorrect_password})
+        response = client.post(url="/api/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":incorrect_password})
         response_json =response.json()
         assert response.status_code == 401
         assert "incorrect" in response_json["message"].lower()
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_get_current_user():
     '''
@@ -164,18 +172,19 @@ async def test_get_current_user():
     '''
     with TestClient(app=test_app) as client:
         # First, login to get a valid access token
-        login_response = client.post(url="/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":TEST_USER_PASSWORD})
+        login_response = client.post(url="/api/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":TEST_USER_PASSWORD})
         login_response_json = login_response.json()
 
         # Use the access token to get current user info
         headers = {"Authorization": f"Bearer {login_response_json['access_token']}"}
-        current_user_response = client.get(url="/me", headers=headers)
+        current_user_response = client.get(url="/api/me", headers=headers)
         current_user_response_json  = current_user_response.json()
         assert current_user_response.status_code == 200
         assert "user_email" in current_user_response_json
         print(current_user_response_json)
         assert current_user_response_json["user_email"] == TEST_USER_EMAIL
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_new_refresh_token_is_useable():
     '''
@@ -185,7 +194,7 @@ async def test_new_refresh_token_is_useable():
     with TestClient(app=test_app) as client:
         
         login_response = client.post(
-            url="/login_with_access_token",
+            url="/api/login_with_access_token",
             data={"username": TEST_USER_EMAIL, "password": TEST_USER_PASSWORD},
         )
 
@@ -194,27 +203,29 @@ async def test_new_refresh_token_is_useable():
 
     
         # Note-  refresh token cookie automatically inclided in this request by testclient, simulating how a browser would send the cookie
-        refresh_response = client.post(url="/refresh")
+        refresh_response = client.post(url="/api/refresh")
         new_access_token = refresh_response.json()["access_token"]
  
         me_response = client.get(
-            url="/me",
+            url="/api/me",
             headers={"Authorization": f"Bearer {new_access_token}"},
         )
         assert me_response.status_code == 200
         assert me_response.json()["user_email"] == TEST_USER_EMAIL
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_refresh_without_cookie_returns_401():
     '''
     Test that /refresh returns 401 when no refresh token cookie is present.
     '''
     with TestClient(app=test_app) as client:
-        # Deliberately do not login — no cookie will be set
-        refresh_response = client.post(url="/refresh")
+        # Deliberately do not login â€” no cookie will be set
+        refresh_response = client.post(url="/api/refresh")
         assert refresh_response.status_code == 401
 
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_refresh_with_invalid_cookie_returns_401():
     '''
@@ -225,41 +236,44 @@ async def test_refresh_with_invalid_cookie_returns_401():
         
 
         client.cookies.set("refresh_token", "this.is.not.a.valid.jwt")
-        refresh_response = client.post(url="/refresh")
+        refresh_response = client.post(url="/api/refresh")
         assert refresh_response.status_code == 401
 
 # TODO - logout tests
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_logout_twice_still_returns_200():
     '''
-    Test that calling /logout twice does not error — idempotent logout.
+    Test that calling /logout twice does not error â€” idempotent logout.
     Test that it allows logout even if refresh token already blacklisted
     '''
     with TestClient(app=test_app) as client:
         client.post(
-            url="/login_with_access_token",
+            url="/api/login_with_access_token",
             data={"username": TEST_USER_EMAIL, "password": TEST_USER_PASSWORD},
         )
  
-        first_logout = client.post(url="/logout")
+        first_logout = client.post(url="/api/logout")
         assert first_logout.status_code == 200
  
-        second_logout = client.post(url="/logout")
+        second_logout = client.post(url="/api/logout")
         assert second_logout.status_code == 200
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_logout_without_cookie_still_returns_200():
     '''
     Test that /logout returns 200 even when no refresh token cookie is present
-    — logout should never error, regardless of cookie state.
+    â€” logout should never error, regardless of cookie state.
     '''
     with TestClient(app=test_app) as client:
         # Deliberately do not login
-        logout_response = client.post(url="/logout")
+        logout_response = client.post(url="/api/logout")
         assert logout_response.status_code == 200
 
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_reset_password_success():
 
@@ -278,7 +292,7 @@ async def test_reset_password_success():
         user_type = "trainee"
         test_user_details = UserSignUpForm(email=email,password=TEST_USER_PASSWORD,confirm_password=TEST_USER_PASSWORD,user_type=user_type)
         test_user_details_mock_json = test_user_details.model_dump()
-        response =  client.post(url="/add_user",json=test_user_details_mock_json)
+        response =  client.post(url="/api/add_user",json=test_user_details_mock_json)
 
         #store user password hash for assert statement later
         test_user_password_hash = hash_password(password_string=TEST_USER_PASSWORD)
@@ -298,7 +312,7 @@ async def test_reset_password_success():
         })
 
         reset_password_form = UserResetPasswordForm(new_password=dummy_password_new,confirm_new_password=dummy_password_new,token=dummy_token).model_dump()
-        response = client.post("/reset_password",json=reset_password_form)
+        response = client.post("/api/reset_password",json=reset_password_form)
         user_updated = await users_collection.find_one(filter={"email": email}, projection={"_id": True,"password":True})
         # bcrypt is non-deterministic so use is_correct_password instead of comparing hashes directly
         assert is_correct_password(password_string=dummy_password_new, hashed_password=user_updated["password"])
@@ -315,6 +329,7 @@ async def test_reset_password_success():
 
 
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_expired_reset_password_token():
     '''
@@ -341,7 +356,7 @@ async def test_expired_reset_password_token():
 
             password_reset_request = UserResetPasswordForm(token=dummy_token,new_password=dummy_password,confirm_new_password=dummy_password)
             password_reset_request_json = password_reset_request.model_dump()
-            response = client.post("/reset_password",json=password_reset_request_json)
+            response = client.post("/api/reset_password",json=password_reset_request_json)
 
             assert response.status_code == 401
             assert "expired" in response.json()["detail"].lower()
@@ -352,5 +367,7 @@ async def test_expired_reset_password_token():
     finally:
         # clean up database after test (remove the dummy entry)
         await reset_collection.delete_one({"token": dummy_token})
+
+
 
 

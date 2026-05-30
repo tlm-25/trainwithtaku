@@ -30,6 +30,7 @@ async def create_or_get_test_database():
 
 
 @pytest.mark.asyncio
+@pytest.mark.mongodb
 async def test_vector_search():
     '''
         Test the vector search retrieval

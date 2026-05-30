@@ -65,7 +65,7 @@ def create_auth_router(limiter:Limiter)->APIRouter:
     :return: APIRouter with all auth endpoints registered
     :rtype: APIRouter
     '''
-    router = APIRouter()
+    router = APIRouter(prefix="/api")
     # limiter = create_rate_limiter(storage_uri=redis_rl_storage_uri)
 
     router.startup()

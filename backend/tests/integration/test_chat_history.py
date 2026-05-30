@@ -1,4 +1,4 @@
-from datetime import datetime
+﻿from datetime import datetime
 import json
 from src.chatbot.chat_history import convert_chat_history_to_langchain_format, _summarise_old_chat_history
 from src.schemas import ChatMessage
@@ -28,6 +28,7 @@ async def test_summarise_old_chat_history():
 
 
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_convert_chat_history_to_langchain_format():
     '''
@@ -43,5 +44,7 @@ async def test_convert_chat_history_to_langchain_format():
     assert isinstance(langchain_format_chat_history[0], SystemMessage)  # summary is first
     # check that the number of messages in the converted chat history is correct (max number in history + 1 for the summary message)
     assert len(langchain_format_chat_history) == config.chatbot.max_n_messages_in_history + 1
+
+
 
 

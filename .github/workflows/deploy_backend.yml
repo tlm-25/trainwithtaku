@@ -1,0 +1,61 @@
+name: Train with Taku Backend
+
+on:
+    # run pipeline if pull request made to main or dev
+    # (this excludes deployment steps)
+    pull_request:
+        branches:
+            - main
+            - dev
+        paths:
+            - 'backend/**'
+    push:
+        # run pipeline if attempted push/merge occurs on main or dev
+        branches:
+            - main
+            - dev
+        # only execute pipeline if changes made on the backend path
+        paths:
+            - 'backend/**'
+
+
+jobs:
+    test:
+        # run on ubuntu (linux) operating system
+        runs-on: ubuntu-latest
+        defaults:
+            # setting working directory at job level to avoid needing to type
+            # ...working-directory: backend on every stage in the job
+            run:
+                working-directory: ./backend/
+
+        strategy:
+            matrix:
+                python-version: ['3.12', '3.13']
+
+        steps:
+            - uses: actions/checkout@v6
+
+            # installs uv and pins python version - replaces setup-python + separate uv install
+            - name: Set up uv and Python
+              uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+              with:
+                version: "0.11.17"
+                
+            - name: Install dependencies
+              run: uv sync --locked
+
+            - name: Run tests
+              run: uv run pytest -m "not llm_call and not slow and not rate_limit and not mongodb"
+              env:
+                MONGO_DB_CONNECTION_STRING: ${{ secrets.MONGO_DB_CONNECTION_STRING }}
+                OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+                JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+                JWT_ALGORITHM: ${{ secrets.JWT_ALGORITHM }}
+                TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+                TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+                TEST_CONVERSATION_ID: ${{ secrets.TEST_CONVERSATION_ID }}
+                REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+                TEST_REDIS_PASSWORD: ${{ secrets.TEST_REDIS_PASSWORD }}
+                MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+                APP_ENVIRONMENT: dev
