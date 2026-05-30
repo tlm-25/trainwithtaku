@@ -46,7 +46,7 @@ jobs:
               run: uv sync --locked
 
             - name: Run tests
-              run: uv run pytest -m "not llm_call and not slow and not rate_limit"
+              run: uv run pytest -m "not llm_call and not slow and not rate_limit and not mongodb"
               env:
                 MONGO_DB_CONNECTION_STRING: ${{ secrets.MONGO_DB_CONNECTION_STRING }}
                 OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

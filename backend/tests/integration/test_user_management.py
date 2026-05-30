@@ -50,6 +50,7 @@ test_app.dependency_overrides[create_or_get_database] = create_or_get_test_datab
 client = TestClient(app=test_app)
 
     
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_successful_user_sign_up():
     '''
@@ -65,6 +66,7 @@ async def test_successful_user_sign_up():
         assert response.status_code == 200
         assert "success" in response.json()["message"].lower()
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_password_confirm_pw_mismatch():
     '''
@@ -80,6 +82,7 @@ async def test_password_confirm_pw_mismatch():
         assert response.status_code == 400
 
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_invalid_email_format_user_sign_up():
     '''
@@ -98,6 +101,7 @@ async def test_invalid_email_format_user_sign_up():
         assert  isinstance(response.json()["message"],str)
         assert "email" in response.json()["message"].lower() and "invalid" in  response.json()["message"].lower()
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_email_already_exists_sign_up():
     '''
@@ -114,6 +118,7 @@ async def test_email_already_exists_sign_up():
         
 
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_successful_login_with_access_token():
     '''
@@ -130,6 +135,7 @@ async def test_successful_login_with_access_token():
         assert "token_type" in response_json
 
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_login_incorrect_email():
     '''
@@ -143,6 +149,7 @@ async def test_login_incorrect_email():
         assert response.status_code == 401
         assert "incorrect" in response_json["message"].lower()
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_login_incorrect_password():
     '''
@@ -157,6 +164,7 @@ async def test_login_incorrect_password():
         assert response.status_code == 401
         assert "incorrect" in response_json["message"].lower()
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_get_current_user():
     '''
@@ -176,6 +184,7 @@ async def test_get_current_user():
         print(current_user_response_json)
         assert current_user_response_json["user_email"] == TEST_USER_EMAIL
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_new_refresh_token_is_useable():
     '''
@@ -204,6 +213,7 @@ async def test_new_refresh_token_is_useable():
         assert me_response.status_code == 200
         assert me_response.json()["user_email"] == TEST_USER_EMAIL
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_refresh_without_cookie_returns_401():
     '''
@@ -215,6 +225,7 @@ async def test_refresh_without_cookie_returns_401():
         assert refresh_response.status_code == 401
 
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_refresh_with_invalid_cookie_returns_401():
     '''
@@ -230,6 +241,7 @@ async def test_refresh_with_invalid_cookie_returns_401():
 
 # TODO - logout tests
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_logout_twice_still_returns_200():
     '''
@@ -248,6 +260,7 @@ async def test_logout_twice_still_returns_200():
         second_logout = client.post(url="/api/logout")
         assert second_logout.status_code == 200
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_logout_without_cookie_still_returns_200():
     '''
@@ -260,6 +273,7 @@ async def test_logout_without_cookie_still_returns_200():
         assert logout_response.status_code == 200
 
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_reset_password_success():
 
@@ -315,6 +329,7 @@ async def test_reset_password_success():
 
 
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_expired_reset_password_token():
     '''
@@ -352,6 +367,7 @@ async def test_expired_reset_password_token():
     finally:
         # clean up database after test (remove the dummy entry)
         await reset_collection.delete_one({"token": dummy_token})
+
 
 
 

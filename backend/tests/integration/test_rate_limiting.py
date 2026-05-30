@@ -74,6 +74,7 @@ def login_test_user(test_client):
 
 
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 @pytest.mark.slow
 @pytest.mark.rate_limit
@@ -112,6 +113,7 @@ async def test_simulate_brute_force_attack(test_client):
     assert "too many login attempts." in message
 
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio    
 @pytest.mark.llm_call
 @pytest.mark.slow
@@ -156,6 +158,8 @@ async def test_user_chatbot_rate_limit(test_client, login_test_user, owned_conve
     message = response.json()["message"].lower()
     logging.info(f"message: {message}")
     assert "message allowance reached" in message
+
+
 
 
 

@@ -108,6 +108,8 @@ async def owned_conversation_id():
 
 
 
+
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_user_chats_retrieval(test_client, login_test_user):
     '''
@@ -126,6 +128,8 @@ async def test_user_chats_retrieval(test_client, login_test_user):
     assert "messages" in stored_chats[0].keys()
 
 
+
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_get_specific_stored_chat(test_client, login_test_user):
     '''
@@ -142,6 +146,8 @@ async def test_get_specific_stored_chat(test_client, login_test_user):
     assert "hi" in response.json()[0]["message"].lower()  
 
 
+
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_create_new_chat(test_client, login_test_user):
     '''
@@ -154,6 +160,7 @@ async def test_create_new_chat(test_client, login_test_user):
     assert "conversation_id" in create_new_chat_response_json
 
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 @pytest.mark.llm_call
 async def test_stream_chatbot_response(test_client, test_client_form, login_test_user, owned_conversation_id):
@@ -183,6 +190,8 @@ async def test_stream_chatbot_response(test_client, test_client_form, login_test
         assert "__REFS__" in chunks[0]
 
 
+
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_attempt_chatbot_not_authenticated(test_client, test_client_form):
     '''
@@ -213,6 +222,8 @@ async def test_attempt_chatbot_not_authenticated(test_client, test_client_form):
     assert "not authenticated" in response.json()["detail"].lower()
 
 
+
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_chat_ownership_check(test_client, login_test_user, test_client_form):
     """
@@ -244,3 +255,5 @@ async def test_chat_ownership_check(test_client, login_test_user, test_client_fo
         await mongo_client[TEST_DATABASE_NAME][CHAT_COLLECTION_NAME].delete_one(
             {"conversation_id": conversation_id}
         )
+
+
