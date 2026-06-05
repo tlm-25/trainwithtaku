@@ -99,7 +99,7 @@ jobs:
 
                 # Artifact registry repo name
                 AR_REPO: trainwithtaku
-            # build and push docker image with two tag names (one with git SHA and one with 'latest') - tracking versions
+            # build and push docker image with two tag names (one with git SHA and one with 'latest') - tracking version no.
               run: |
                 gcloud auth configure-docker ${GCP_ARL}-docker.pkg.dev
                 
