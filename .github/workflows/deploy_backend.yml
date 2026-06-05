@@ -104,7 +104,7 @@ jobs:
                 gcloud auth configure-docker ${GCP_ARL}-docker.pkg.dev
                 
                 docker build \
-                -t ${GCP_ARL}-docker.pkg.dev/${GOOGLE_PROJECT}/${AR_REPO}/${IMAGE_NAME}:latest
+                -t ${GCP_ARL}-docker.pkg.dev/${GOOGLE_PROJECT}/${AR_REPO}/${IMAGE_NAME}:latest \
                 -t ${GCP_ARL}-docker.pkg.dev/${GOOGLE_PROJECT}/${AR_REPO}/${IMAGE_NAME}:${{ github.sha }} \
                  -f ./backend/Dockerfile .
                 
