@@ -18,6 +18,14 @@ on:
         paths:
             - 'backend/**'
 
+permissions:
+    contents: read
+    id-token: write
+
+env:
+    IMAGE_NAME: trainwithtaku-backend
+    DEV_NAME: trainwithtaku-backend-dev
+    PROD: trainwithtaku-backend-prod
 
 jobs:
     test:
@@ -59,3 +67,55 @@ jobs:
                 TEST_REDIS_PASSWORD: ${{ secrets.TEST_REDIS_PASSWORD }}
                 MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
                 APP_ENVIRONMENT: dev
+        
+    build-and-push:
+        # run on ubuntu (linux) OS
+        runs-on: ubuntu-latest
+        # only run if test passes
+        needs: test
+        # only run if it's a push
+        if: github.event_name == 'push'
+
+        permissions:
+            contents: read
+            id-token: write
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
+
+            - name: Authenticate to Google Cloud (OIDC)
+              uses: google-github-actions/auth@v2
+              with:
+                # get workload identity provider and GCP service account emai
+                workload_identity_provider: ${{ secrets.GCP_WIP }}
+                service_account: ${{ secrets.SA_EMAIL }}
+            
+            - name: Build and push docker image
+              env:
+                GOOGLE_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+                # Artifact registry location
+                GCP_ARL: europe-west2
+
+                # Artifact registry repo name
+                AR_REPO: trainwithtaku
+            # build and push docker image  with two tag names (one with git SHA and onbe with 'latest')          
+              run: |
+                gcloud auth configure-docker ${GCP_ARL}-docker.pkg.dev
+                
+                docker build \
+                -t ${GCP_ARL}-docker.pkg.dev/${GOOGLE_PROJECT}/${AR_REPO}/${IMAGE_NAME}:latest
+                -t ${GCP_ARL}-docker.pkg.dev/${GOOGLE_PROJECT}/${AR_REPO}/${IMAGE_NAME}:${{ github.sha }} \
+                 -f ./backend/Dockerfile .
+                
+                docker push ${GCP_ARL}-docker.pkg.dev/${GOOGLE_PROJECT}/${AR_REPO}/${IMAGE_NAME}:latest
+                docker push ${GCP_ARL}-docker.pkg.dev/${GOOGLE_PROJECT}/${AR_REPO}/${IMAGE_NAME}:${{ github.sha }}
+    
+
+
+
+
+
+
+        
+                
