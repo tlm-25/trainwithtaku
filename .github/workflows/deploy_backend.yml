@@ -108,7 +108,7 @@ jobs:
                 docker build \
                 -t ${GCP_ARL}-docker.pkg.dev/${GOOGLE_PROJECT}/${AR_REPO}/${IMAGE_NAME}:latest \
                 -t ${GCP_ARL}-docker.pkg.dev/${GOOGLE_PROJECT}/${AR_REPO}/${IMAGE_NAME}:${{ github.sha }} \
-                 -f ./backend/Dockerfile .
+                 -f ./backend/Dockerfile ./backend
                 
                 docker push ${GCP_ARL}-docker.pkg.dev/${GOOGLE_PROJECT}/${AR_REPO}/${IMAGE_NAME}:latest
                 docker push ${GCP_ARL}-docker.pkg.dev/${GOOGLE_PROJECT}/${AR_REPO}/${IMAGE_NAME}:${{ github.sha }}
