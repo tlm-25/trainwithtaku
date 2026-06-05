@@ -9,14 +9,16 @@ on:
             - dev
         paths:
             - 'backend/**'
+            - '.github/workflows/**'
     push:
         # run pipeline if attempted push/merge occurs on main or dev
         branches:
             - main
             - dev
-        # only execute pipeline if changes made on the backend path
+        # only execute pipeline if changes made on the backend path or workflows path
         paths:
             - 'backend/**'
+            - '.github/workflows/**'
 
 permissions:
     contents: read
@@ -99,7 +101,7 @@ jobs:
 
                 # Artifact registry repo name
                 AR_REPO: trainwithtaku
-            # build and push docker image with two tag names (one with git SHA and one with 'latest') - tracking versions
+            # build and push docker image with two tag names (one with git SHA and one with 'latest') - tracking version no.
               run: |
                 gcloud auth configure-docker ${GCP_ARL}-docker.pkg.dev
                 
