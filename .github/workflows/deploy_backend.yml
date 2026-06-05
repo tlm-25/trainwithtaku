@@ -28,6 +28,11 @@ env:
     IMAGE_NAME: trainwithtaku-backend
     DEV_NAME: trainwithtaku-backend-dev
     PROD: trainwithtaku-backend-prod
+    GOOGLE_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+    # Artifact registry location
+    GCP_ARL: europe-west2
+    # Artifact registry repo name
+    AR_REPO: trainwithtaku
 
 jobs:
     test:
@@ -94,13 +99,7 @@ jobs:
                 service_account: ${{ secrets.SA_EMAIL }}
             
             - name: Build and push docker image
-              env:
-                GOOGLE_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
-                # Artifact registry location
-                GCP_ARL: europe-west2
 
-                # Artifact registry repo name
-                AR_REPO: trainwithtaku
             # build and push docker image with two tag names (one with git SHA and one with 'latest') - tracking version no.
               run: |
                 gcloud auth configure-docker ${GCP_ARL}-docker.pkg.dev
@@ -112,6 +111,46 @@ jobs:
                 
                 docker push ${GCP_ARL}-docker.pkg.dev/${GOOGLE_PROJECT}/${AR_REPO}/${IMAGE_NAME}:latest
                 docker push ${GCP_ARL}-docker.pkg.dev/${GOOGLE_PROJECT}/${AR_REPO}/${IMAGE_NAME}:${{ github.sha }}
+    dev-deploy:
+        runs-on: ubuntu-latest
+
+        # only run if in dev and it's from a push
+        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+
+        steps:
+
+            - name: Deploy dev backend to gcloud run
+              run: |
+                gcloud run deploy ${DEV_NAME} \
+                --allow-unauthenticated \
+                --image ${GCP_ARL}-docker.pkg.dev/${GOOGLE_PROJECT}/${AR_REPO}/${IMAGE_NAME}:${{ github.sha }} \
+                --set-env-vars "MONGO_DB_CONNECTION_STRING=${{ secrets.MONGO_DB_CONNECTION_STRING }},OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }},JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }},JWT_ALGORITHM=${{ secrets.JWT_ALGORITHM }},REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }},MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }},APP_ENVIRONMENT=dev" \
+                --port 8000 \
+                --region ${GCP_ARL} \
+                --platform managed \
+                --project ${GOOGLE_PROJECT}
+
+    prod-deploy:
+
+        runs-on: ubuntu-latest
+        needs: build-and-push
+
+        # only run if in dev and it's from a push
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+        steps:
+
+            - name: Deploy prod backend to gcloud run
+              run: |
+                gcloud run deploy ${PROD_NAME} \
+                --allow-unauthenticated \
+                --image ${GCP_ARL}-docker.pkg.dev/${GOOGLE_PROJECT}/${AR_REPO}/${IMAGE_NAME}:${{ github.sha }} \
+                --set-env-vars "MONGO_DB_CONNECTION_STRING=${{ secrets.MONGO_DB_CONNECTION_STRING }},OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }},JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }},JWT_ALGORITHM=${{ secrets.JWT_ALGORITHM }},REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }},MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }},APP_ENVIRONMENT=prod" \
+                --port 8000 \
+                --region ${GCP_ARL} \
+                --platform managed \
+                --project ${GOOGLE_PROJECT}
+    
     
 
 
