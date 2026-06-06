@@ -119,6 +119,12 @@ jobs:
         needs: build-and-push
 
         steps:
+            - name: Authenticate to Google Cloud (OIDC)
+              uses: google-github-actions/auth@v2
+              with:
+                # get workload identity provider and GCP service account emai
+                workload_identity_provider: ${{ secrets.GCP_WIP }}
+                service_account: ${{ secrets.SA_EMAIL }}
 
             - name: Deploy dev backend to gcloud run
               run: |
@@ -140,7 +146,13 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
         steps:
-
+            - name: Authenticate to Google Cloud (OIDC)
+              uses: google-github-actions/auth@v2
+              with:
+                # get workload identity provider and GCP service account emai
+                workload_identity_provider: ${{ secrets.GCP_WIP }}
+                service_account: ${{ secrets.SA_EMAIL }}
+                
             - name: Deploy prod backend to gcloud run
               run: |
                 gcloud run deploy ${PROD_NAME} \
