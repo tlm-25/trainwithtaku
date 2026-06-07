@@ -15,6 +15,11 @@ from src.rate_limiter import create_rate_limiter, custom_rate_limit_handler
 
 from pymongo.errors import ServerSelectionTimeoutError
 import logging
+from src.config import APP_CONFIG
+
+frontend_dev_url = APP_CONFIG.domain.frontend_domain_dev
+frontend_main_url = APP_CONFIG.domain.frontend_domain_main
+ALLOWED_ORIGINS = ["http://localhost:5173","http://localhost:3000",frontend_dev_url,frontend_main_url]
 
 
 def _custom_mongo_server_timeout_error(request:Request,exc:ServerSelectionTimeoutError)->JSONResponse:
@@ -68,7 +73,7 @@ def create_app(redis_rl_storage_uri:str|SecretStr|None=None)->FastAPI:
     app.add_middleware(
     CORSMiddleware,
 
-    allow_origins=["http://localhost:5173","http://localhost:3000"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -22,7 +22,8 @@ JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
 TEST_USER_PASSWORD = os.getenv("TEST_USER_PASSWORD")
 TEST_CONVERSATION_ID = os.getenv("TEST_CONVERSATION_ID")
 MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
-
+FRONTEND_DEV_URL= os.getenv("FRONTEND_DEV_URL")
+FRONTEND_MAIN_URL = os.getenv("FRONTEND_MAIN_URL")
 class EnvConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
     app_environment:str
@@ -88,8 +89,8 @@ class AuthTokenConfig(BaseModel):
 
 class DomainConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
-    frontend_domain_dev:str 
-    frontend_domain_prod:str
+    frontend_domain_dev:str = FRONTEND_DEV_URL
+    frontend_domain_main:str = FRONTEND_MAIN_URL
 
 class RateLimitConfig(BaseModel):
     login_limit: str
@@ -123,7 +124,6 @@ class ProjectConfig(BaseSettings):
     auth: AuthTokenConfig
     domain:DomainConfig
     redis_config:RedisConfig
-
 
 
 def load_config_from_yaml(yaml_config_path:str)->ProjectConfig:
@@ -186,6 +186,8 @@ def load_config_from_yaml(yaml_config_path:str)->ProjectConfig:
 
     
     config_dict["redis_config"]["redis_connection_string"] = redis_connection_string
+    
+
 
 
     return ProjectConfig(**config_dict)
