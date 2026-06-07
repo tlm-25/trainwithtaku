@@ -131,7 +131,7 @@ jobs:
                 gcloud run deploy ${DEV_NAME} \
                 --allow-unauthenticated \
                 --image ${GCP_ARL}-docker.pkg.dev/${GOOGLE_PROJECT}/${AR_REPO}/${IMAGE_NAME}:${{ github.sha }} \
-                --set-env-vars "MONGO_DB_CONNECTION_STRING=${{ secrets.MONGO_DB_CONNECTION_STRING }},OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }},JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }},JWT_ALGORITHM=${{ secrets.JWT_ALGORITHM }},REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }},MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }},TEST_USER_EMAIL=${{ secrets.TEST_USER_EMAIL }},TEST_USER_PASSWORD=${{ secrets.TEST_USER_PASSWORD }},TEST_CONVERSATION_ID=${{ secrets.TEST_CONVERSATION_ID }},TEST_REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }},APP_ENVIRONMENT=dev" \
+                --set-env-vars "MONGO_DB_CONNECTION_STRING=${{ secrets.MONGO_DB_CONNECTION_STRING }},OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }},JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }},JWT_ALGORITHM=${{ secrets.JWT_ALGORITHM }},REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }},MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }},TEST_USER_EMAIL=${{ secrets.TEST_USER_EMAIL }},TEST_USER_PASSWORD=${{ secrets.TEST_USER_PASSWORD }},TEST_CONVERSATION_ID=${{ secrets.TEST_CONVERSATION_ID }},TEST_REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }},APP_ENVIRONMENT=dev",FRONTEND_DEV_URL=${{secrets.FRONTEND_DEV_URL}} \
                 --port 8000 \
                 --region ${GCP_ARL} \
                 --platform managed \
@@ -158,7 +158,7 @@ jobs:
                 gcloud run deploy ${PROD_NAME} \
                 --allow-unauthenticated \
                 --image ${GCP_ARL}-docker.pkg.dev/${GOOGLE_PROJECT}/${AR_REPO}/${IMAGE_NAME}:${{ github.sha }} \
-                --set-env-vars "MONGO_DB_CONNECTION_STRING=${{ secrets.MONGO_DB_CONNECTION_STRING }},OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }},JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }},JWT_ALGORITHM=${{ secrets.JWT_ALGORITHM }},REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }},MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }},TEST_USER_EMAIL=${{ secrets.TEST_USER_EMAIL }},TEST_USER_PASSWORD=${{ secrets.TEST_USER_PASSWORD }},TEST_CONVERSATION_ID=${{ secrets.TEST_CONVERSATION_ID }},TEST_REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }},APP_ENVIRONMENT=prod" \
+                --set-env-vars "MONGO_DB_CONNECTION_STRING=${{ secrets.MONGO_DB_CONNECTION_STRING }},OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }},JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }},JWT_ALGORITHM=${{ secrets.JWT_ALGORITHM }},REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }},MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }},TEST_USER_EMAIL=${{ secrets.TEST_USER_EMAIL }},TEST_USER_PASSWORD=${{ secrets.TEST_USER_PASSWORD }},TEST_CONVERSATION_ID=${{ secrets.TEST_CONVERSATION_ID }},TEST_REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }},APP_ENVIRONMENT=prod",FRONTEND_MAIN_URL=${{secrets.FRONTEND_MAIN_URL}} \
                 --port 8000 \
                 --region ${GCP_ARL} \
                 --platform managed \

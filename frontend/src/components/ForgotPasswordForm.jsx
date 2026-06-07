@@ -1,5 +1,6 @@
 import { useState } from "react"
 import toast from "react-hot-toast";
+import { BASE_URL } from "../api";
 
 
 function ForgotPasswordForm(){
@@ -30,7 +31,7 @@ function ForgotPasswordForm(){
     const requestPasswordResetLink = async (event) => {
         event.preventDefault();
 
-        const response = await fetch('/api/send_change_password_link',{
+        const response = await fetch(`${BASE_URL}/api/send_change_password_link`,{
             method: "POST",
             body: JSON.stringify({
                 email: emailInput
