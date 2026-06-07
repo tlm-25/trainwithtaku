@@ -1,4 +1,5 @@
 import {useState} from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import '../fanta.css'
 import {toast} from 'react-hot-toast'
@@ -256,7 +257,7 @@ export default function Authentication (props) {
                                          <button className="authenticate-button" onClick={handleAuthenticate} disabled={isAuthenticating||password.length<1||!emailValid}><p>Login</p></button>
                                     )}
                 {!isRegistration && (
-                    <a href="/forgot-password" style={{fontSize: "1.1rem", color:"#f5c97d"}}>Forgot password?</a>
+                    <Link to="/forgot-password" style={{fontSize: "1.1rem", color:"#f5c97d"}}>Forgot password?</Link>
                 )}
                 <hr />
             <div className="register-content">

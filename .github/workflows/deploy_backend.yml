@@ -9,7 +9,7 @@ on:
             - dev
         paths:
             - 'backend/**'
-            - '.github/workflows/**'
+            - '.github/workflows/deploy_backend.yml'
     push:
         # run pipeline if attempted push/merge occurs on main or dev
         branches:
