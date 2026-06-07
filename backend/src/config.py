@@ -172,6 +172,11 @@ def load_config_from_yaml(yaml_config_path:str)->ProjectConfig:
     config_dict["auth"]["jwt_secret_key"] = JWT_SECRET_KEY
     config_dict["auth"]["jwt_algorithm"] = JWT_ALGORITHM
 
+    if FRONTEND_DEV_URL:
+        config_dict["domain"]["frontend_domain_dev"] = FRONTEND_DEV_URL
+    if FRONTEND_MAIN_URL:
+        config_dict["domain"]["frontend_domain_main"] = FRONTEND_MAIN_URL
+
     config_dict["env_config"]=  env_config.model_dump()
 
     # get redis databse details 

@@ -40,7 +40,7 @@ auth:
 
 domain:
   frontend_domain_dev: http://localhost:5173
-  frontend_domain_prod: trainwithtaku.com
+  frontend_domain_main: trainwithtaku.com
 
 redis_config:
   host: redis-10505.crce287.eu-west-2-2.ec2.cloud.redislabs.com
