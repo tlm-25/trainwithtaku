@@ -1,5 +1,5 @@
 from src.search.retrieval import  CustomAsyncMongoDBAtlasRetriever
-
+import logging
 from src.config import APP_CONFIG
 
 MONGO_DB_CONNECTION_STRING = APP_CONFIG.database.mongo_db_connection_string.get_secret_value()
@@ -50,13 +50,15 @@ async def test_vector_search():
 
 
     retrieved_documents = await async_mongodb_retriever.ainvoke(input=test_query)
+    logging.info(f"retrieved documents: {retrieved_documents} \n")
 
 
     
-    
+    logging.info(f"metadata sample: {retrieved_documents[0].metadata}")
     assert len(retrieved_documents) == TOP_K
     assert isinstance(retrieved_documents[0],Document)
     assert isinstance(retrieved_documents[0].page_content,str)
+    assert isinstance(retrieved_documents[0].metadata["source"],str)
 
 
 

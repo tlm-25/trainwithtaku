@@ -93,7 +93,9 @@ async def upload_to_vector_store(database:AsyncDatabase,documents:list[Document]
         document_data.append({
 
             "content": document.page_content,
-            "embedding": embedding[0]
+            "embedding": embedding[0],
+            "source": document.metadata.get("source","")
+
         })
 
     #upload to vector store

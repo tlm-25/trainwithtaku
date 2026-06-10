@@ -107,7 +107,7 @@ async def mongo_db_vector_search(query:str,vector_store_collection:AsyncCollecti
     retrieved_documents_list = []
     async for document in retrieval_results:
         # put into Document object with 'page_content' property since langchain is expecting
-        retrieved_documents_list.append(Document(page_content=document["content"]))
+        retrieved_documents_list.append(Document(page_content=document["content"],metadata={"source": document.get("source", "")}))
     return retrieved_documents_list
 
 def format_documents_for_prompt(documents:list[Document])->str:
@@ -121,11 +121,13 @@ def format_documents_for_prompt(documents:list[Document])->str:
     '''
 
     for i in range(len(documents)):
-        documents[i].page_content = f"Source {i+1}: " + documents[i].page_content.strip() + "\n"
+        documents[i].page_content = f"Source {i+1}:\n"+ f"{documents[i].metadata["source"]}\n" + documents[i].page_content.strip() + "\n"
+    
+
 
     documents_string = " ".join([doc.page_content for doc in documents])
 
-    return " ".join([doc.page_content for doc in documents])
+    return documents_string
 
 
 
