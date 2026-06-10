@@ -94,6 +94,7 @@ async def stream_chatbot_response(user_query:str,chat_history:list[dict],vector_
     logging.info(retrieved_documents)
 
     references = [doc.page_content  for doc in retrieved_documents]
+
     
     references_json = json.dumps(references)
 
@@ -132,7 +133,7 @@ async def stream_chatbot_response(user_query:str,chat_history:list[dict],vector_
         text_chunk = chunk.content
         accumulated_text+=chunk.content
         yield text_chunk
-    print(retrieved_documents)
+    logging.info(f" String formatted docs: {string_formatted_documents}")
     # use __REFS__ as a reference for the frontend to be able to distinguish references text from the message text 
     yield f"__REFS__{string_formatted_documents}"
      # store the chatbot response in the database once generated 

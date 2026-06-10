@@ -50,10 +50,11 @@ async def test_vector_search():
 
 
     retrieved_documents = await async_mongodb_retriever.ainvoke(input=test_query)
+    logging.info(f"retrieved documents: {retrieved_documents} \n")
 
 
     
-    logging.info(f"metadata: {retrieved_documents[0].metadata}")
+    logging.info(f"metadata sample: {retrieved_documents[0].metadata}")
     assert len(retrieved_documents) == TOP_K
     assert isinstance(retrieved_documents[0],Document)
     assert isinstance(retrieved_documents[0].page_content,str)
