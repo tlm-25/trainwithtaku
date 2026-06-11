@@ -316,64 +316,20 @@ function ChatWindow() {
                 // Add an empty bot message to the chat log before the text streaming starts
                 setChatLog(prev => [...prev, { type: 'bot', message: '', timestamp: String(now) }]);
 
-                //while reading from streaming response
+                // flag to track whether we've seen __REFS__ yet
+                let refsStarted = false;
+                // collects all refs text across multiple reads — refs can arrive split across several chunks
+                let refsBuffer = "";
+
                 while(!done){
 
-                    //read a chunk of data from the stream
                     const {value, done: readerDone} = await reader.read()
 
-                    //check if we've already read the last chunk in the stream
                     done = readerDone
                     if(done) {
-
-                        break
-                    };
-
-                    if(value){
-                        //DEcode the chunk
-                        const chunkValue = decoder.decode(value,{stream: true})
-
-                        
-                        /*chunk is either chatbot answer text or a __REFS__ chunk containing the retrieved document references.
-                        Everything after __REFS__ is reference text, sent as a separate final chunk after the answer finishes streaming.
-                        */
-                        if(!chunkValue.includes("__REFS__")){
-
-                            // always append to buffer regardless of which chat is active - prevents data loss when switching chats mid-stream
-                            appendStringToBuffer(conversationId, chunkValue)
-
-                            // only update chatlog display if this is the currently viewed chat
-                            if(currentChatIDRef.current===conversationId){
-                                setChatLog((prev)=>{
-
-                                    //creating shallow copy of chat log - avoid mutating state directly for non-primitive type
-                                    const updatedChatlog = [...prev]
-
-                                    //get the latest entry of the chat log (will have the blank text)
-                                    const latestMessage = updatedChatlog[updatedChatlog.length - 1]
-
-                                    //update the last entry with the accumulated buffer text for this conversation
-                                    if(latestMessage.type === 'bot'){
-                                        updatedChatlog[updatedChatlog.length - 1] = {
-                                            ...latestMessage,
-                                            message: bufferRef.current[conversationId]?.text ?? ""
-                                        }
-                                    }
-
-                                    return updatedChatlog
-                                });
-                            }
-                        }
-
-                        else {
-                            //Once the chatbot has finished streaming its answer
-
-                            //if chunk includes "__REFS__" string, this means the chunk is the retrieved documents reference and not part of the chatbot answer
-                            const stringFormattedDocuments = chunkValue.split("__REFS__")[1]
-
-                            // finalize the buffer with sources so they are recoverable if user switches back to this chat
-                            finalizeBuffer(conversationId, stringFormattedDocuments)
-
+                        // stream ended — finalize refs with everything collected in refsBuffer
+                        if(refsStarted){
+                            finalizeBuffer(conversationId, refsBuffer)
                             if(currentChatIDRef.current === conversationId){
                                 setChatLog((prev)=>{
                                     const updatedChatlog = [...prev]
@@ -381,12 +337,49 @@ function ChatWindow() {
                                     if(latestMessage.type === 'bot'){
                                         updatedChatlog[updatedChatlog.length - 1] = {
                                             ...latestMessage,
-                                            reference_docs: stringFormattedDocuments
+                                            reference_docs: refsBuffer
                                         }
                                     }
                                     return updatedChatlog
                                 })
-                          }
+                            }
+                        }
+                        break
+                    };
+
+                    if(value){
+                        const chunkValue = decoder.decode(value,{stream: true})
+
+                        // once __REFS__ has been seen, every subsequent chunk is refs text — add to refsBuffer and skip message logic
+                        if(refsStarted){
+                            refsBuffer += chunkValue
+                            continue
+                        }
+
+                        if(chunkValue.includes("__REFS__")){
+                            // first time we see __REFS__ — split the chunk, append any message text before it, start collecting refs after it
+                            refsStarted = true
+                            const parts = chunkValue.split("__REFS__")
+                            if(parts[0]) appendStringToBuffer(conversationId, parts[0])
+                            refsBuffer = parts[1] ?? ""
+                        } else {
+                            // normal message chunk — append to buffer regardless of which chat is active to prevent data loss when switching chats mid-stream
+                            appendStringToBuffer(conversationId, chunkValue)
+
+                            // only update the displayed chat if this is the currently viewed chat
+                            if(currentChatIDRef.current===conversationId){
+                                setChatLog((prev)=>{
+                                    const updatedChatlog = [...prev]
+                                    const latestMessage = updatedChatlog[updatedChatlog.length - 1]
+                                    if(latestMessage.type === 'bot'){
+                                        updatedChatlog[updatedChatlog.length - 1] = {
+                                            ...latestMessage,
+                                            message: bufferRef.current[conversationId]?.text ?? ""
+                                        }
+                                    }
+                                    return updatedChatlog
+                                });
+                            }
                         }
                         
 
