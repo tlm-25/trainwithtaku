@@ -316,6 +316,10 @@ function ChatWindow() {
                 // Add an empty bot message to the chat log before the text streaming starts
                 setChatLog(prev => [...prev, { type: 'bot', message: '', timestamp: String(now) }]);
 
+                // accumulates ref chunks across multiple reads since large __REFS__ payloads can be split by the browser stream reader
+                let refsBuffer = "";
+                let refsStarted = false;
+
                 //while reading from streaming response
                 while(!done){
 
@@ -325,7 +329,22 @@ function ChatWindow() {
                     //check if we've already read the last chunk in the stream
                     done = readerDone
                     if(done) {
-
+                        if(refsStarted){
+                            finalizeBuffer(conversationId, refsBuffer)
+                            if(currentChatIDRef.current === conversationId){
+                                setChatLog((prev)=>{
+                                    const updatedChatlog = [...prev]
+                                    const latestMessage = updatedChatlog[updatedChatlog.length - 1]
+                                    if(latestMessage.type === 'bot'){
+                                        updatedChatlog[updatedChatlog.length - 1] = {
+                                            ...latestMessage,
+                                            reference_docs: refsBuffer
+                                        }
+                                    }
+                                    return updatedChatlog
+                                })
+                            }
+                        }
                         break
                     };
 
@@ -333,12 +352,18 @@ function ChatWindow() {
                         //DEcode the chunk
                         const chunkValue = decoder.decode(value,{stream: true})
 
-                        
-                        /*chunk is either chatbot answer text or a __REFS__ chunk containing the retrieved document references.
-                        Everything after __REFS__ is reference text, sent as a separate final chunk after the answer finishes streaming.
-                        */
-                        if(!chunkValue.includes("__REFS__")){
+                        // accumulate into refs buffer once __REFS__ marker has been seen — avoids bleeding when large ref payloads are split across multiple reads
+                        if(refsStarted){
+                            refsBuffer += chunkValue
+                            continue
+                        }
 
+                        if(chunkValue.includes("__REFS__")){
+                            refsStarted = true
+                            const parts = chunkValue.split("__REFS__")
+                            if(parts[0]) appendStringToBuffer(conversationId, parts[0])
+                            refsBuffer = parts[1] ?? ""
+                        } else {
                             // always append to buffer regardless of which chat is active - prevents data loss when switching chats mid-stream
                             appendStringToBuffer(conversationId, chunkValue)
 
@@ -363,30 +388,6 @@ function ChatWindow() {
                                     return updatedChatlog
                                 });
                             }
-                        }
-
-                        else {
-                            //Once the chatbot has finished streaming its answer
-
-                            //if chunk includes "__REFS__" string, this means the chunk is the retrieved documents reference and not part of the chatbot answer
-                            const stringFormattedDocuments = chunkValue.split("__REFS__")[1]
-
-                            // finalize the buffer with sources so they are recoverable if user switches back to this chat
-                            finalizeBuffer(conversationId, stringFormattedDocuments)
-
-                            if(currentChatIDRef.current === conversationId){
-                                setChatLog((prev)=>{
-                                    const updatedChatlog = [...prev]
-                                    const latestMessage = updatedChatlog[updatedChatlog.length - 1]
-                                    if(latestMessage.type === 'bot'){
-                                        updatedChatlog[updatedChatlog.length - 1] = {
-                                            ...latestMessage,
-                                            reference_docs: stringFormattedDocuments
-                                        }
-                                    }
-                                    return updatedChatlog
-                                })
-                          }
                         }
                         
 
