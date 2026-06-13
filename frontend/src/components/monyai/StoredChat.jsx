@@ -58,7 +58,13 @@ function StoredChat(props){
                     data.push({ type: 'bot', message: liveBuffer.text, timestamp: new Date().toISOString() })
                 }
 
-                setChatLogFunction(data)
+                // reference_docs is stored in the DB as a JSON string — parse it back into an array for the UI
+                const parsedData = data.map(msg => ({
+                    ...msg,
+                    reference_docs: msg.reference_docs ? JSON.parse(msg.reference_docs) : null
+                }))
+
+                setChatLogFunction(parsedData)
                 setChatSelectedFlagFunction(true)
                 setCurrentChatIDFunction(conversationId)
                 // set the ref value immediately to convo id
