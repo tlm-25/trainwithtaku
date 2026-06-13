@@ -30,6 +30,7 @@ export function ChatProvider(props) {
             
         }
         // append chunk 
+        console.log(`chunk: ${chunk}`)
         bufferRef.current[conversationId].text+=chunk;
 
         /*update the state to trigger re-render and update the UI with new buffer content
