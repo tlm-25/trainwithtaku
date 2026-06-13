@@ -142,7 +142,7 @@ async def stream_chatbot_response(user_query:str,chat_history:list[dict],vector_
     yield f"__REFS__{json.dumps(references_dict_json_string)}"
      # store the chatbot response in the database once generated 
 
-    final_generated_message = ChatMessage(message=accumulated_text,timestamp=str(datetime.now()),type='bot',reference_docs=string_formatted_documents)
+    final_generated_message = ChatMessage(message=accumulated_text,timestamp=str(datetime.now()),type='bot',reference_docs=json.dumps(references_dict_json_string))
     
     logging.info("Saving message to db...")
     add_message_to_db = await conversation_collection.update_one(

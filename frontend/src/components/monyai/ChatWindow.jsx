@@ -280,8 +280,8 @@ function ChatWindow() {
 
                 body: JSON.stringify({
                     user_message: userMessage,
-                    chat_history: newChatLog,
-                    //may update to include client form later
+                    // strip reference_docs before sending — backend expects str|None but we store it as a parsed array for the UI
+                    chat_history: newChatLog.map(({ reference_docs, ...msg }) => msg),
                     client_form: null,
                     conversation_id: conversationId
                 }),
