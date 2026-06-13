@@ -60,7 +60,7 @@ function ChatWindow() {
     const [sidebarOpen, setSidebarOpen] = useState(false)
 
     const [messageSources,setMessageSources] = useState("")
-    // Load chat history for current selected chat
+    // Load chat history for the current selected chat
     useEffect(() => {
 
 
@@ -337,7 +337,7 @@ function ChatWindow() {
                                     if(latestMessage.type === 'bot'){
                                         updatedChatlog[updatedChatlog.length - 1] = {
                                             ...latestMessage,
-                                            reference_docs: refsBuffer
+                                            reference_docs: JSON.parse(refsBuffer)
                                         }
                                     }
                                     return updatedChatlog

@@ -90,13 +90,14 @@ async def stream_chatbot_response(user_query:str,chat_history:list[dict],vector_
     #get the relevant documents
     retrieved_documents = await async_mongodb_retriever.ainvoke(input=retrieval_query)
 
-    print(retrieved_documents)
-    logging.info(retrieved_documents)
+    logging.info(f"retrieved documents: {retrieved_documents}")
 
-    references = [doc.page_content  for doc in retrieved_documents]
+    # convert to JSON paraseable string (will be used for displaying sources in the chatbot
+    references_dict_json_string = ([{"page_content":f"{doc.page_content}", 
+                                     "url":f"{doc.metadata["source"]}"} 
+                                     for doc in retrieved_documents]) 
 
-    
-    references_json = json.dumps(references)
+
 
     string_formatted_documents = format_documents_for_prompt(documents=retrieved_documents)
     
@@ -135,15 +136,20 @@ async def stream_chatbot_response(user_query:str,chat_history:list[dict],vector_
         yield text_chunk
     logging.info(f" String formatted docs: {string_formatted_documents}")
     # use __REFS__ as a reference for the frontend to be able to distinguish references text from the message text 
-    yield f"__REFS__{string_formatted_documents}"
+    
+    
+    
+    yield f"__REFS__{json.dumps(references_dict_json_string)}"
      # store the chatbot response in the database once generated 
 
     final_generated_message = ChatMessage(message=accumulated_text,timestamp=str(datetime.now()),type='bot',reference_docs=string_formatted_documents)
-   
+    
+    logging.info("Saving message to db...")
     add_message_to_db = await conversation_collection.update_one(
             {"conversation_id": conversation_id},
             {"$push": {"messages": final_generated_message.model_dump()}}
             )
+    logging.info("Message successfully saved to db...")
 
     #  add_message_to_db = await conversation_container.patch_item(item = cosmos_id, partition_key=conversation_id,patch_operations =[{ "op": "add", "path": "/messages/-", "value": final_generated_message_dict}])
 

@@ -121,15 +121,13 @@ def format_documents_for_prompt(documents:list[Document])->str:
     '''
 
     for i in range(len(documents)):
-        documents[i].page_content = f"Source {i+1}:\n"+ f"{documents[i].metadata["source"]}\n" + documents[i].page_content.strip() + "\n"
+        documents[i].page_content = f"Source {i+1}:\n"+ documents[i].page_content.strip() + "\n"
     
 
 
     documents_string = " ".join([doc.page_content for doc in documents])
 
     return documents_string
-
-
 
             
 
