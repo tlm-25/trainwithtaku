@@ -318,8 +318,11 @@ function ChatWindow() {
 
                 // flag to track whether we've seen __REFS__ yet
                 let refsStarted = false;
-                // collects all refs text across multiple reads — refs can arrive split across several chunks
+                // collects all refs/sources text across multiple chunks — built up until stream ends then parsed as JSON
                 let refsBuffer = "";
+                // accumulates every chunk of raw text received so far — kept outside the loop so it persists across chunks,
+                // allowing __REFS__ to be detected even if it arrives split across two separate chunks
+                let rawResponseBuffer = ""
 
                 while(!done){
 
@@ -356,14 +359,21 @@ function ChatWindow() {
                             continue
                         }
 
-                        if(chunkValue.includes("__REFS__")){
-                            // first time we see __REFS__ — split the chunk, append any message text before it, start collecting refs after it
+                        // add this chunk to the running total of all text received so far
+                        rawResponseBuffer += chunkValue
+
+                        // check the full accumulated text (not just this chunk) for __REFS__ so we catch it even if it was split across two chunks
+                        if(!refsStarted && rawResponseBuffer.includes("__REFS__")){
+                            // first time we see __REFS__ marker...
+                            // ... split the chunk, append any message text before it, start collecting refs after it
                             refsStarted = true
-                            const parts = chunkValue.split("__REFS__")
-                            if(parts[0]) appendStringToBuffer(conversationId, parts[0])
+                            //split buffer into an array of two parts - [0] is response text, [1] is sources
+                            const parts = rawResponseBuffer.split("__REFS__")
+                            // parts[0] is all message text so far — sync it into the text display buffer
+                            appendStringToBuffer(conversationId, parts[0])
                             refsBuffer = parts[1] ?? ""
                         } else {
-                            // normal message chunk — append to buffer regardless of which chat is active to prevent data loss when switching chats mid-stream
+                            // normal message chunk  : append to buffer regardless of which chat is active to prevent data loss when switching chats mid-stream
                             appendStringToBuffer(conversationId, chunkValue)
 
                             // only update the displayed chat if this is the currently viewed chat
@@ -436,11 +446,6 @@ function ChatWindow() {
 
     }
     
-
-    
-
-        
-
 
 
     const handleSubmit = async (event) => {
