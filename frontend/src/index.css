@@ -835,6 +835,19 @@ button:hover{
 
 
 
+/*SEARCH*/ 
+
+.search-bar-container {
+  display: flex;
+  justify-content: center;
+  background-color: #000;
+  padding: 1rem;
+    border-bottom: 4px solid rgb(182, 182, 182);
+}
+
+
+
+
 /*FOOTER*/
 
 .webpage-footer {
@@ -845,5 +858,6 @@ button:hover{
   background-color: #000000;
   color: #fff;
 }
+
 
 

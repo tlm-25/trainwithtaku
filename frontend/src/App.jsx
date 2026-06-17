@@ -5,6 +5,7 @@ import MonyAI from '../pages/MonyAI'
 import Profile from '../pages/Profile'
 import ForgotPassword from '../pages/ForgotPassword'
 import ResetPassword from '../pages/ResetPassword'
+import Blog from '../pages/Blog'
 import { Toaster } from 'react-hot-toast'
 
 
@@ -27,6 +28,7 @@ function App() {
       <Route path="/profile" element={<Profile />}/>
       <Route path="/forgot-password" element={<ForgotPassword />}/>
       <Route path="/reset-password" element={<ResetPassword />}/>
+      <Route path="/takus-tips" element={<Blog />}/>
     </Routes>
 
       
