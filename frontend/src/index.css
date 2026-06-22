@@ -835,7 +835,7 @@ button:hover{
 
 
 
-/*SEARCH*/ 
+/*SEARCH ARTICLES*/ 
 
 .search-bar-container {
   display: flex;
@@ -872,12 +872,19 @@ button:hover{
   color: #f3f3f3;
   background-color: #1a1a1a;
   transition: 0.3s;
+  cursor: pointer;
 }
 
 .article-card-image {
   border-radius:  3px;
 }
 
+
+.article-card-headline-container{
+  display:flex;
+  justify-content: center;
+  align-items:center;
+}
 
 
 

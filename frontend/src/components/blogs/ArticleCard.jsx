@@ -1,15 +1,22 @@
-function ArticleCard() {
+function ArticleCard(props) {
+
+
+    const {imageSource, articleHeadline, articleContentSample} = props 
 
 
     return (
         <>
 
             <div className="article-card">
-                <img src="src" className="article-card-image"/>
+                <img src={imageSource} className="article-card-image"/>
                 <div className="article-card-headline-container">
-                    Headline
+                    <h4>{articleHeadline}</h4>
                 </div>
-                
+                <p>
+                    {articleContentSample}
+                    
+                </p>
+
 
             </div>
         </>
