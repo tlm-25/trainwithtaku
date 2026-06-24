@@ -1,5 +1,6 @@
 
 import ArticleCard from "./ArticleCard";
+import {articles} from "../../dummyData.json"
 function ArticleSearchCardContainer (){
     /**
      *Placeholder for article headlien
@@ -12,18 +13,17 @@ function ArticleSearchCardContainer (){
     return (
         <>
         <div className="article-card-container">
-            <ArticleCard imageSource={'/twt-logo.png'} articleHeadline={dummyArticleHeadline} articleContentSample={articleContentSample} />
-            <ArticleCard imageSource={'/twt-logo.png'} articleHeadline={dummyArticleHeadline} articleContentSample={articleContentSample} />
-            <ArticleCard imageSource={'/twt-logo.png'} articleHeadline={dummyArticleHeadline} articleContentSample={articleContentSample} />
-            <ArticleCard imageSource={'/twt-logo.png'} articleHeadline={dummyArticleHeadline} articleContentSample={articleContentSample} />
-            <ArticleCard imageSource={'/twt-logo.png'} articleHeadline={dummyArticleHeadline} articleContentSample={articleContentSample} />
-            <ArticleCard imageSource={'/twt-logo.png'} articleHeadline={dummyArticleHeadline} articleContentSample={articleContentSample} />
-            <ArticleCard imageSource={'/twt-logo.png'} articleHeadline={dummyArticleHeadline} articleContentSample={articleContentSample} />
-            <ArticleCard imageSource={'/twt-logo.png'} articleHeadline={dummyArticleHeadline} articleContentSample={articleContentSample} />
-            <ArticleCard imageSource={'/twt-logo.png'} articleHeadline={dummyArticleHeadline} articleContentSample={articleContentSample} />
-            <ArticleCard imageSource={'/twt-logo.png'} articleHeadline={dummyArticleHeadline} articleContentSample={articleContentSample} />
 
 
+            {articles.map((article,index)=>(
+                <ArticleCard key={index}
+                            imageSource={article.headline_image_url} 
+                            articleHeadline={article.headline} 
+                            articleContentSample={article.article_text_sample} />
+
+
+            ))}
+            
 
         </div>
 
