@@ -61,6 +61,7 @@ function Navigation(props){
                                     <li><Link to="#" className="nav-link">Programs</Link></li>
                                     <li><Link to="#" className="nav-link">Online Coaching</Link></li>
                                     <li><Link to="/takus-tips" className="nav-link"> Taku's Tips</Link></li>
+                                    <li><Link to="/create-post" className="nav-link">Create TT post...</Link></li>
                                     <li><Link to="#" className="nav-link">Contact</Link></li>
                                     {globalUser&&<li><Link to="/monyai" className="nav-link"> MonyAI</Link></li>}
                                     <div></div>
