@@ -13,9 +13,8 @@ function CreateBlog(){
         event.preventDefault(); 
 
         const formData = new FormData();
-        formData.append('headline',title);
+        formData.append('title',title);
         formData.append('article_text',postText);
-        formData.append('upload_date',new Date().toISOString());
         if(headlineImageFile){
             formData.append('headline_image_file',headlineImageFile)
 

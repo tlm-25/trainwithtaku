@@ -108,7 +108,10 @@ class RedisConfig(BaseModel):
     database_name:str
     rate_limits:RateLimitConfig
 
-
+class BlogConfig(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    blog_collection_name:str
+    bucket_name:str
 
 
 
@@ -124,6 +127,7 @@ class ProjectConfig(BaseSettings):
     auth: AuthTokenConfig
     domain:DomainConfig
     redis_config:RedisConfig
+    blogs: BlogConfig
 
 
 def load_config_from_yaml(yaml_config_path:str)->ProjectConfig:

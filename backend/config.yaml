@@ -54,6 +54,11 @@ redis_config:
     sign_up_limit: "5/minute"
     send_password_change_limit: "5/minute"
     reset_password_limit: "5/minute"
+
+blogs:
+  blog_collection_name: blogs
+  bucket_name: twt-blogs
+
   
 
 
