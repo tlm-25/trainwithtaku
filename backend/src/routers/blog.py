@@ -1,5 +1,6 @@
 from src.database.connection import create_or_get_database
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi.responses import JSONResponse
 from pymongo.asynchronous.database import AsyncDatabase
 from slowapi import Limiter
 from src.config import APP_CONFIG as config
@@ -8,8 +9,11 @@ from google.cloud import storage
 # documentation https://talkiq.github.io/gcloud-aio/autoapi/storage/index.html
 from gcloud.aio.storage import Storage
 import aiohttp 
+import logging
 
-def create_blog_router()->APIRouter:
+logging.basicConfig(level=logging.INFO)
+
+def upload_blog_router()->APIRouter:
     '''
     Factory function for creating blog router with an injected rate limiter.
     :return: APIRouter with all auth endpoints registered
@@ -18,7 +22,7 @@ def create_blog_router()->APIRouter:
     router = APIRouter(prefix="/api")
 
     @router.post("/upload_blog")
-    async def upload_blog(
+    async def upload_blog_router(
         headline_image_file:UploadFile = File(default=None),
         article_id:int = Form(...),
         title:str = Form(...),
@@ -47,19 +51,30 @@ def create_blog_router()->APIRouter:
                 
                 # read raw file bytes
                 file_bytes = await headline_image_file.read()
+                file_name = headline_image_file.filename
 
-                upload_url = f"https://storage.googleapis.com/{bucket_name}/{headline_image_file.filename}"
+
+                # upload to cloud storage using gcloud
+                upload_to_gcloud_storage = await client.upload(bucket= bucket_name,object_name=file_name,data=file_bytes)
+
+                # get the image url after uploading it to gcloud storage 
+                image_gcs_url = upload_to_gcloud_storage["mediaLink"]
+            
                 
 
+            # save the blog info into mongodb database
+            blog_info = {
+                "article_id": article_id,
+                "title": title,
+                "article_text": article_text,
+                "headline_image_url": image_gcs_url
+            }
 
-                status = await client.upload(bucket= bucket_name,object_name=headline_image_file.filename,data=file_bytes)
+            # insert the blog info to the mongo db collection
+            upload_blog_info = await article_info_collection.insert_one(blog_info)
+            logging.info("Uploaded blog to database")
+            return JSONResponse(content={"message":"Blog uploaded successfully"},status_code=200)
 
-            
-
-
-        # get the image url from google cloud storage 
-
-        # save the blog info into mongodb database
         
 
     return router
