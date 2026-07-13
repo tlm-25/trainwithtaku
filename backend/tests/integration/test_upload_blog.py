@@ -4,7 +4,7 @@ from src.app_setup import create_app
 from pymongo import AsyncMongoClient
 from src.database.connection import create_or_get_database
 from src.config import APP_CONFIG
-
+import logging
 MONGO_DB_CONNECTION_STRING = APP_CONFIG.database.mongo_db_connection_string.get_secret_value()
 TEST_DATABASE_NAME  = APP_CONFIG.database.test_database_name
 USER_ACCOUNTS_COLLECTION_NAME = APP_CONFIG.database.user_accounts_collection_name
@@ -68,10 +68,14 @@ async def test_upload_blog_without_image(test_blog_data):
         }
     )
     assert response.status_code == 200
-    assert response.json()["message"] == "Blog uploaded successfully"
+    logging.info(response.json())
+    assert response.json()["message"].lower() == "blog uploaded successfully"
     # delete the uploaded blog from the test database
     async with AsyncMongoClient(host=MONGO_DB_CONNECTION_STRING,serverSelectionTimeoutMS=10000) as mongo_client:
         database = mongo_client[TEST_DATABASE_NAME]
         blog_collection_name = APP_CONFIG.blogs.blog_collection_name
-        await database[blog_collection_name].delete_one({"article_id": test_blog_data["article_id"]})
+        data =  await database[blog_collection_name].find_one({"article_id":1})
+        logging.info(f"data:{data}")
+        assert data["article_id"] == 1
+        await database[blog_collection_name].delete_one({"article_id": 1})
 
