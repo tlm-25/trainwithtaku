@@ -10,6 +10,7 @@ from google.cloud import storage
 from gcloud.aio.storage import Storage
 import aiohttp 
 import logging
+import uuid  
 
 logging.basicConfig(level=logging.INFO)
 
@@ -24,7 +25,6 @@ def upload_blog_router()->APIRouter:
     @router.post("/upload_blog")
     async def upload_blog_router(
         headline_image_file:UploadFile = File(default=None),
-        article_id:int = Form(...),
         title:str = Form(...),
         article_text:str = Form(...),
         database:AsyncDatabase=Depends(create_or_get_database)
@@ -34,6 +34,9 @@ def upload_blog_router()->APIRouter:
         # get the collection for blogs from database
         main_database = database
         article_info_collection = main_database[blog_collection_name]
+        
+        # Random string for article id
+        article_id = uuid.uuid4()
 
         # if image uploaded, save it to google cloud storage
         # client = storage.client()
@@ -67,7 +70,7 @@ def upload_blog_router()->APIRouter:
                 "article_id": article_id,
                 "title": title,
                 "article_text": article_text,
-                "headline_image_url": image_gcs_url
+                "headline_image_url": image_gcs_url,
             }
 
 
@@ -78,7 +81,7 @@ def upload_blog_router()->APIRouter:
         
             # save the blog info into mongodb database
             blog_info = {
-                "article_id": article_id,
+                "article_id": str(article_id),
                 "title": title,
                 "article_text": article_text,
                 "headline_image_url": None

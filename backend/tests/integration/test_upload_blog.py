@@ -74,8 +74,7 @@ async def test_upload_blog_without_image(test_blog_data):
     async with AsyncMongoClient(host=MONGO_DB_CONNECTION_STRING,serverSelectionTimeoutMS=10000) as mongo_client:
         database = mongo_client[TEST_DATABASE_NAME]
         blog_collection_name = APP_CONFIG.blogs.blog_collection_name
-        data =  await database[blog_collection_name].find_one({"article_id":1})
-        logging.info(f"data:{data}")
-        assert data["article_id"] == 1
-        await database[blog_collection_name].delete_one({"article_id": 1})
+        data =  await database[blog_collection_name].find_one({"title":"Test Blog Title"})
+        assert data["article_text"] =="This is a test blog article."
+        await database[blog_collection_name].delete_one({"title": "Test Blog Title"})
 

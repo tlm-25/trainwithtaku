@@ -1,4 +1,6 @@
 import {useState, useEffect, useRef} from 'react';
+import {toast} from 'react-hot-toast';
+import {BASE_URL} from '../../api';
 
 function CreateBlog(){
     const [title, setTitle] = useState("");
@@ -15,13 +17,32 @@ function CreateBlog(){
         const formData = new FormData();
         formData.append('title',title);
         formData.append('article_text',postText);
+
         if(headlineImageFile){
             formData.append('headline_image_file',headlineImageFile)
+            
 
 
         }
-        
-       
+
+        try {
+            const response = await fetch(`${BASE_URL}/api/upload_blog`,{
+                method: 'POST',
+                body: formData
+            })
+
+            const data = await response.json()
+
+            if (response.ok){
+                toast.success(data.message);
+            }
+            else {
+                toast.error(data.message || "Failed to upload post. Please try again.");
+            }
+        }
+        catch (error) {
+            toast.error("Failed to upload post. Please check your connection and try again.");
+        }
 
     }
 
