@@ -46,7 +46,7 @@ def upload_blog_router()->APIRouter:
             # create a client for google cloud storage
             # client = storage.Client()
 
-            with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession() as session:
                 client = Storage(session=session)
                             # upload the image to google cloud storage
                 # get the bucket name from config
