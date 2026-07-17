@@ -58,7 +58,7 @@ def upload_blog_router()->APIRouter:
 
 
                 # upload to cloud storage using gcloud
-                upload_to_gcloud_storage = await client.upload(bucket= bucket_name,object_name=file_name,data=file_bytes)
+                upload_to_gcloud_storage = await client.upload(bucket=bucket_name, object_name=file_name, file_data=file_bytes)
                 logging.info("Uploaded image to gcloud")
                 # get the image url after uploading it to gcloud storage 
                 image_gcs_url = upload_to_gcloud_storage["mediaLink"]
