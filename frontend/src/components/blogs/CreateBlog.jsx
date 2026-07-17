@@ -9,6 +9,12 @@ function CreateBlog(){
 
     const fileRef = useRef(null); 
 
+    function resetInputs(){
+        setTitle("");
+        setPostText("");
+        setHeadlineImageFile(null)
+    }
+
 
     const  handleUploadBlog = async (event) => {
         // stop the form refreshing page once the form is submitted
@@ -43,6 +49,8 @@ function CreateBlog(){
         catch (error) {
             toast.error("Failed to upload post. Please check your connection and try again.");
         }
+
+        resetInputs();
 
     }
 
