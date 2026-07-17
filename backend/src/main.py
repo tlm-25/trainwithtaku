@@ -12,7 +12,7 @@ import logging
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from src.routers import auth, chat
+from src.routers import auth, chat, blog
 from src.config import APP_CONFIG
 from src.app_setup import create_app
 

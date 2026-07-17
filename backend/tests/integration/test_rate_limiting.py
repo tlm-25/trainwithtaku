@@ -84,7 +84,7 @@ async def test_simulate_brute_force_attack(test_client):
         Return 401 error for the first 10
         When the 11th attempt is made within a minute, a 429 error should be returned 
         
-        If on windows, ensure that focker desktop is open and you are logged in. Docker will be needed 
+        If on windows, ensure that docker desktop is open and you are logged in. Docker will be needed 
         to spim u hte local redis server for this test 
         
         Ensure thethe local redis instance is running 

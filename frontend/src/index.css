@@ -835,6 +835,77 @@ button:hover{
 
 
 
+/*SEARCH ARTICLES*/ 
+
+.search-bar-container {
+  display: flex;
+  justify-content: center;
+  background-color: #000;
+  padding: 1rem;
+    border-bottom: 4px solid rgb(182, 182, 182);
+}
+
+
+.article-card-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,400px);
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+
+
+.article-card{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 5px solid black;
+  border-radius: 3px;
+  color: #1a1a1a;
+  background-color: #f3f3f3;
+  padding: 0.5rem;
+
+}
+
+.article-card:hover{
+  scale: 1.05;
+  color: #f3f3f3;
+  background-color: #1a1a1a;
+  transition: 0.3s;
+  cursor: pointer;
+}
+
+.article-card-image {
+  border-radius:  3px;
+}
+
+
+.article-card-headline-container{
+  display:flex;
+  justify-content: center;
+  align-items:center;
+}
+
+
+/**CREATE BLOG **/
+
+.create-blog-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: black;
+  color: #f3f3f3;
+}
+
+
+.input-group textarea {
+  height: 160px;
+}
+
+
+
+
 /*FOOTER*/
 
 .webpage-footer {
@@ -845,5 +916,6 @@ button:hover{
   background-color: #000000;
   color: #fff;
 }
+
 
 

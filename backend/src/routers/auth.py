@@ -176,7 +176,7 @@ def create_auth_router(limiter:Limiter)->APIRouter:
 
                 # refresh token
                 refresh_token = await create_refresh_token(data={"sub":str(user_info["_id"])})
-                print(f"generated refresh token")
+                logging.info(f"generated refresh token")
                 
 
 
@@ -202,7 +202,7 @@ def create_auth_router(limiter:Limiter)->APIRouter:
                     key="refresh_token",value=refresh_token, httponly=True, samesite="lax", max_age=max_age
 
                 )
-                print("cookie set on response")
+                logging.info("cookie set on response")
 
     
                 return response
