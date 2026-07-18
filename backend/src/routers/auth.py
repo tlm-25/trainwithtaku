@@ -189,17 +189,12 @@ def create_auth_router(limiter:Limiter)->APIRouter:
                 max_age = REFRESH_TOKEN_EXPIRE_DAYS* 24 * 60 * 60 # length of validility of refresh token in seconds (for browser cookie)
                 
                 response = JSONResponse(content={"access_token":access_token,"token_type":"bearer","message":"successful login"}, status_code=200)
-                
-                # boolean checking which environment we are in. If in dev environment, use http. If in prod, use https
-                secure = ENV not in ["dev", "development"]
-                
-                
+
                 # not sending refresh token to the client - setting to http only (stop javascript based attacks).
                 # storing refresh token in browser cookie
-                
-
+                # SameSite=None + Secure required since frontend and backend are on different domains (cross-site requests)
                 response.set_cookie(
-                    key="refresh_token",value=refresh_token, httponly=True, samesite="lax", max_age=max_age
+                    key="refresh_token",value=refresh_token, httponly=True, samesite="none", secure=True, max_age=max_age
 
                 )
                 logging.info("cookie set on response")
@@ -279,9 +274,9 @@ def create_auth_router(limiter:Limiter)->APIRouter:
         # length of validility of refresh token in seconds (for browser cookie)
         max_age = REFRESH_TOKEN_EXPIRE_DAYS* 24 * 60 * 60 
 
+        # SameSite=None + Secure required since frontend and backend are on different domains (cross-site requests)
         response.set_cookie(
-            key="refresh_token",value=new_refresh_token, httponly=True, samesite
-            ="lax", max_age=max_age)
+            key="refresh_token",value=new_refresh_token, httponly=True, samesite="none", secure=True, max_age=max_age)
         
         return response
 
@@ -324,7 +319,8 @@ def create_auth_router(limiter:Limiter)->APIRouter:
         refresh_token = request.cookies.get("refresh_token")  
         response = JSONResponse(content={"message": "successfully logged out"}, status_code=200)   
         # Always clear the cookie — even if the token is already invalid or missing.
-        response.delete_cookie(key="refresh_token", httponly=True, samesite="lax")
+        # SameSite/Secure must match the flags used when the cookie was set, or the browser won't recognize it as the same cookie to clear
+        response.delete_cookie(key="refresh_token", httponly=True, samesite="none", secure=True)
     
         if not refresh_token:
             return response
