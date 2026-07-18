@@ -39,7 +39,7 @@ auth:
   reset_password_link_expire_minutes: 20
 
 domain:
-  frontend_domain_dev: http://localhost:5173
+  frontend_domain_dev: https://trainwithtaku-git-dev-tlm-25s-projects.vercel.app/
   frontend_domain_main: trainwithtaku.com
 
 redis_config:
