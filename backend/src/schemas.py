@@ -142,3 +142,13 @@ class UserInDB(User):
 
 class RefreshTokenREquest(BaseModel):
     refresh_token:str
+
+
+class BlogUpload(BaseModel):
+    article_id:int
+    headline:str
+    article_text:str
+    article_text_sample:str
+    upload_date:str
+    headline_image_url:str
+

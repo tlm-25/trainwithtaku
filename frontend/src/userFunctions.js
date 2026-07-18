@@ -1,7 +1,8 @@
+import { BASE_URL } from './api.js'
 
 export async function signUp(email,password,userType,confirmPassword) {
 
-    const response = await fetch(`http://localhost:8000/add_user`,{
+    const response = await fetch(`${BASE_URL}/api/add_user`,{
         method: 'POST',
         headers: {
             "Content-Type":"application/json"
@@ -24,7 +25,7 @@ export async function signUp(email,password,userType,confirmPassword) {
 
 export async function  login(email,password) {
 
-    const response = await fetch(`http://localhost:8000/authenticate_user`,{
+    const response = await fetch(`${BASE_URL}/api/authenticate_user`,{
         method: 'POST',
         body: JSON.stringify({
             email:email,

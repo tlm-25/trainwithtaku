@@ -1,4 +1,5 @@
-import pytest
+﻿import pytest
+import pytest_asyncio
 from fastapi.testclient import TestClient
 from src.database.connection import get_mongo_client, create_or_get_database, create_or_get_collection
 
@@ -17,6 +18,7 @@ TEST_USER_PASSWORD = APP_CONFIG.email.test_user_password.get_secret_value()
 MONGO_DB_CONNECTION_STRING = APP_CONFIG.database.mongo_db_connection_string.get_secret_value()
 VECTOR_STORE_COLLECTION_NAME = APP_CONFIG.database.vector_store_collection_name
 TEST_DATABASE_NAME  = APP_CONFIG.database.test_database_name
+CHAT_COLLECTION_NAME = APP_CONFIG.database.chat_collection_name
 REDIS_CONNECTION_STRING = APP_CONFIG.redis_config.redis_connection_string.get_secret_value()
 
 TEST_REDIS_CONNECTION_STRING = None
@@ -46,10 +48,24 @@ def test_client():
     return TestClient(app=test_app)
 
 
+@pytest_asyncio.fixture
+async def owned_conversation_id():
+    async with AsyncMongoClient(host=MONGO_DB_CONNECTION_STRING, serverSelectionTimeoutMS=10000) as mongo_client:
+        db = mongo_client[TEST_DATABASE_NAME]
+        conversation_id = str(uuid.uuid4())
+        await db[CHAT_COLLECTION_NAME].insert_one({
+            "conversation_id": conversation_id,
+            "email": TEST_USER_EMAIL,
+            "messages": []
+        })
+        yield conversation_id
+        await db[CHAT_COLLECTION_NAME].delete_one({"conversation_id": conversation_id})
+
+
 @pytest.fixture
 def login_test_user(test_client):
     login_response = test_client.post(
-        "/login_with_access_token",
+        "/api/login_with_access_token",
         data={"username": TEST_USER_EMAIL, "password": TEST_USER_PASSWORD}
     )
     print(login_response.json())
@@ -58,6 +74,7 @@ def login_test_user(test_client):
 
 
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 @pytest.mark.slow
 @pytest.mark.rate_limit
@@ -67,7 +84,7 @@ async def test_simulate_brute_force_attack(test_client):
         Return 401 error for the first 10
         When the 11th attempt is made within a minute, a 429 error should be returned 
         
-        If on windows, ensure that focker desktop is open and you are logged in. Docker will be needed 
+        If on windows, ensure that docker desktop is open and you are logged in. Docker will be needed 
         to spim u hte local redis server for this test 
         
         Ensure thethe local redis instance is running 
@@ -84,26 +101,27 @@ async def test_simulate_brute_force_attack(test_client):
         
 
         password_guess = str(uuid.uuid4())
-        response = test_client.post("/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":password_guess})
+        response = test_client.post("/api/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":password_guess})
     
         assert response.status_code == 401
 
     #ensure a 429 error code is returned with rate limit in reached and expected error message
-    response = test_client.post("/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":password_guess})
+    response = test_client.post("/api/login_with_access_token",data={"username":TEST_USER_EMAIL,"password":password_guess})
     message = response.json()["message"].lower()
     logging.info(f"message: {message}")
     assert response.status_code== 429
     assert "too many login attempts." in message
 
 
+@pytest.mark.mongodb
 @pytest.mark.asyncio    
 @pytest.mark.llm_call
 @pytest.mark.slow
 @pytest.mark.rate_limit
-async def test_user_chatbot_rate_limit(test_client,login_test_user):
+async def test_user_chatbot_rate_limit(test_client, login_test_user, owned_conversation_id):
     '''
     Confirm that user based chat limiting enforced - RUN IN ISOLATION TO AVOID STATE CORRUPTION
-    
+
     '''
     n_iter = _get_n_iterations_from_rate_limit(rate_limit_string=RATE_LIMITS.chat_limit)
 
@@ -116,25 +134,23 @@ async def test_user_chatbot_rate_limit(test_client,login_test_user):
         test_chat_history = [
         {"type":"bot","message":"Hi",'timestamp': '2026-01-01 11:37:11.409816'}]
 
-        dummy_conversation_id  = str(uuid.uuid4())
-       # send a sample
-        with test_client.stream("POST","/chat",json={
+        with test_client.stream("POST","/api/chat",json={
             "user_message": user_message,
             "chat_history": test_chat_history,
-            "conversation_id": dummy_conversation_id
+            "conversation_id": owned_conversation_id
             },
             headers=login_test_user) as response:
 
             #check that response given
             assert response.status_code == 200
             chunks = list(response.iter_text())
-            
+
             assert all(isinstance(chunk,str) for chunk in chunks)
 
-    response = test_client.post("/chat", json={
+    response = test_client.post("/api/chat", json={
             "user_message": user_message,
             "chat_history": test_chat_history,
-            "conversation_id": dummy_conversation_id
+            "conversation_id": owned_conversation_id
             }, headers=login_test_user)
 
     # Ensure that rate limit is enforced for user
@@ -142,6 +158,9 @@ async def test_user_chatbot_rate_limit(test_client,login_test_user):
     message = response.json()["message"].lower()
     logging.info(f"message: {message}")
     assert "message allowance reached" in message
+
+
+
 
 
 

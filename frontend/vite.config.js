@@ -7,7 +7,8 @@ export default defineConfig({
   server: {
     proxy:{
       '/api': {
-        target: 'http://localhost:8000', //backend dev server
+        //backend dev server
+        target: 'http://localhost:8000', 
         ///spoof origin to avoid CORS issues with cookies - browser will think request coming from same frontend server instead of backend server
         // makes host header in request match frontend server instead of backend server, allowing cookies to be sent and receveived
         changeOrigin: true,

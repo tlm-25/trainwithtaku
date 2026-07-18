@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext, createContext } from "react";
 import {useNavigate} from "react-router-dom";
+import { BASE_URL } from "../api";
 //initialise context - create context object - allow to share data globally across components without passing props manually
 const AuthContext = createContext()
 
@@ -37,7 +38,7 @@ export function AuthProvider(props){
     
     async function signUp(email,password,userType,confirmPassword) {
 
-        const response = await fetch(`/api/add_user`,{
+        const response = await fetch(`${BASE_URL}/api/add_user`,{
             method: 'POST',
             headers: {
                 "Content-Type":"application/json"
@@ -69,7 +70,7 @@ export function AuthProvider(props){
     // authenticate a user trying to log in
     async function  login(email,password) {
 
-        const response = await fetch("/api/login_with_access_token", {
+        const response = await fetch(`${BASE_URL}/api/login_with_access_token`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -118,7 +119,7 @@ export function AuthProvider(props){
     async function refreshAccessToken() {
 
         try{
-            const response = await fetch("/api/refresh",{
+            const response = await fetch(`${BASE_URL}/api/refresh`,{
                     method: "POST",
                     // tell browser to send crednetials to backend (e.g. cookies) 
                     credentials: "include",
@@ -160,7 +161,7 @@ export function AuthProvider(props){
 
         try {
 
-            const response = await fetch("/api/logout",{
+            const response = await fetch(`${BASE_URL}/api/logout`,{
                 method: "POST",
                 credentials: "include",
                 headers: {
@@ -211,14 +212,14 @@ export function AuthProvider(props){
             }
         })
 
-        let response = await fetch(url,buildOptions(token))
+        let response = await fetch(`${BASE_URL}${url}`,buildOptions(token))
 
         //if token invalid, try to refresh and retry request once
         if (response.status ===401){
             //if access token invalid, try to refresh and retry request once
             const newToken = await refreshAccessToken()
             if (!token) return null
-            response = await fetch(url,buildOptions(newToken))
+            response = await fetch(`${BASE_URL}${url}`,buildOptions(newToken))
 
         }
         return response
@@ -244,7 +245,7 @@ export function AuthProvider(props){
                 // fetch the authenticated user's information from the backend using the access token (if it exists)
                 
                 if(token){
-                    const response = await fetch("/api/me",{
+                    const response = await fetch(`${BASE_URL}/api/me`,{
                     method: "GET",
                     credentials: "include",
                     headers: {"Authorization": `Bearer ${token}`}

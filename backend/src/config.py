@@ -21,8 +21,9 @@ JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
 TEST_USER_PASSWORD = os.getenv("TEST_USER_PASSWORD")
 TEST_CONVERSATION_ID = os.getenv("TEST_CONVERSATION_ID")
-
-
+MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
+FRONTEND_DEV_URL= os.getenv("FRONTEND_DEV_URL")
+FRONTEND_MAIN_URL = os.getenv("FRONTEND_MAIN_URL")
 class EnvConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
     app_environment:str
@@ -88,8 +89,8 @@ class AuthTokenConfig(BaseModel):
 
 class DomainConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
-    frontend_domain_dev:str 
-    frontend_domain_prod:str
+    frontend_domain_dev:str = FRONTEND_DEV_URL
+    frontend_domain_main:str = FRONTEND_MAIN_URL
 
 class RateLimitConfig(BaseModel):
     login_limit: str
@@ -107,7 +108,10 @@ class RedisConfig(BaseModel):
     database_name:str
     rate_limits:RateLimitConfig
 
-
+class BlogConfig(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    blog_collection_name:str
+    bucket_name:str
 
 
 
@@ -123,7 +127,7 @@ class ProjectConfig(BaseSettings):
     auth: AuthTokenConfig
     domain:DomainConfig
     redis_config:RedisConfig
-
+    blogs: BlogConfig
 
 
 def load_config_from_yaml(yaml_config_path:str)->ProjectConfig:
@@ -161,7 +165,7 @@ def load_config_from_yaml(yaml_config_path:str)->ProjectConfig:
         config_dict = yaml.safe_load(f)
 
     # inject secrets from environment variables into config dict (these are not stored in YAML for security)
-    config_dict["email"]["mail_password"] = os.getenv("MAIL_PASSWORD")
+    config_dict["email"]["mail_password"] = MAIL_PASSWORD
     config_dict["email"]["test_user_password"] = TEST_USER_PASSWORD
     config_dict["database"]["mongo_db_connection_string"] = MONGO_DB_CONNECTION_STRING
 
@@ -171,6 +175,11 @@ def load_config_from_yaml(yaml_config_path:str)->ProjectConfig:
 
     config_dict["auth"]["jwt_secret_key"] = JWT_SECRET_KEY
     config_dict["auth"]["jwt_algorithm"] = JWT_ALGORITHM
+
+    if FRONTEND_DEV_URL:
+        config_dict["domain"]["frontend_domain_dev"] = FRONTEND_DEV_URL
+    if FRONTEND_MAIN_URL:
+        config_dict["domain"]["frontend_domain_main"] = FRONTEND_MAIN_URL
 
     config_dict["env_config"]=  env_config.model_dump()
 
@@ -186,6 +195,8 @@ def load_config_from_yaml(yaml_config_path:str)->ProjectConfig:
 
     
     config_dict["redis_config"]["redis_connection_string"] = redis_connection_string
+    
+
 
 
     return ProjectConfig(**config_dict)

@@ -9,12 +9,17 @@ from pydantic import SecretStr
 from fastapi.middleware.cors import CORSMiddleware
 from src.routers.auth import create_auth_router
 from src.routers.chat import create_chat_router
-
+from src.routers.blog import upload_blog_router
 from src.rate_limiter import create_rate_limiter, custom_rate_limit_handler
 
 
 from pymongo.errors import ServerSelectionTimeoutError
 import logging
+from src.config import APP_CONFIG
+
+frontend_dev_url = APP_CONFIG.domain.frontend_domain_dev
+frontend_main_url = APP_CONFIG.domain.frontend_domain_main
+ALLOWED_ORIGINS = ["http://localhost:5173","http://localhost:3000",frontend_dev_url,frontend_main_url]
 
 
 def _custom_mongo_server_timeout_error(request:Request,exc:ServerSelectionTimeoutError)->JSONResponse:
@@ -55,8 +60,10 @@ def create_app(redis_rl_storage_uri:str|SecretStr|None=None)->FastAPI:
     # rate limiter based on authenticated user 
     user_based_rate_limiter = create_rate_limiter(storage_uri=redis_rl_storage_uri,key="user")
     
+    # app routers
     auth_router = create_auth_router(limiter=ip_rate_limiter)
     chat_router = create_chat_router(limiter=user_based_rate_limiter)
+    blog_router = upload_blog_router()
     
     # find where these are needed in the app - defauly app.state.limiter read by slowapi _rate_limit_exceeded_handler 
     # however, using customer rate limit handler so this shouldn't be an issue 
@@ -68,7 +75,7 @@ def create_app(redis_rl_storage_uri:str|SecretStr|None=None)->FastAPI:
     app.add_middleware(
     CORSMiddleware,
 
-    allow_origins=["http://localhost:5173"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -78,5 +85,6 @@ def create_app(redis_rl_storage_uri:str|SecretStr|None=None)->FastAPI:
     app.add_exception_handler(ServerSelectionTimeoutError,_custom_mongo_server_timeout_error)
     app.include_router(auth_router,tags=["auth"])
     app.include_router(chat_router,tags=["chat"])
+    app.include_router(blog_router,tags=["blog"])
     
     return app

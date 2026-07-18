@@ -1,4 +1,4 @@
-from src.email_utils.sender import _create_message, send_email
+﻿from src.email_utils.sender import _create_message, send_email
 from src.email_utils.html_utils import HTML_TEMPLATE_FOLDER_PATH
 from email.message import EmailMessage
 import pytest
@@ -25,6 +25,8 @@ test_app.state.ip_rate_limiter.enabled = False
 test_app.state.user_based_rate_limiter.enabled = False
 client = TestClient(app=test_app)
 
+
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_create_message_html_only_success():
     '''Test that message created'''
@@ -35,6 +37,8 @@ async def test_create_message_html_only_success():
     assert isinstance(message,EmailMessage)
     assert isinstance(message["To"],str)
 
+
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_create_message_text_only_success():
     '''Test that message created'''
@@ -46,6 +50,8 @@ async def test_create_message_text_only_success():
     assert isinstance(message["To"],str)
 
 
+
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_create_message_no_content_to_send_raises_value_error():
     '''Test that correct error raised '''
@@ -57,6 +63,8 @@ async def test_create_message_no_content_to_send_raises_value_error():
         message = await _create_message(recipients=recipients,subject=test_subject,context={"user":EMAIL_CONFIG.test_user_email},html_file_name=None,text_content=None)
 
 
+
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_file_non_existent_raises_value_error():
     '''Test that correct error raised when html file does not exist'''
@@ -65,6 +73,8 @@ async def test_file_non_existent_raises_value_error():
     with pytest.raises(FileNotFoundError,match=f"Could not find '{test_non_existent_file_path}'"):
         message = await _create_message(recipients=recipients,subject=test_subject,context={"user":EMAIL_CONFIG.test_user_email},html_file_name="non_existent")
 
+
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_send_email():
     '''
@@ -78,12 +88,17 @@ async def test_send_email():
 
 
 
+
+@pytest.mark.mongodb
 @pytest.mark.asyncio
 async def test_send_reset_password_link():
     with TestClient(app=test_app) as client:
         # Deliberately do not login - accessed if user forgets password so they won't be logged in 
         # deliberately not handling non-existent emails so that we do not give attackers clues for accounts
-        send_password_response= client.post(url="/send_change_password_link",json={"email":EMAIL_CONFIG.dev_email})
+        send_password_response= client.post(url="/api/send_change_password_link",json={"email":EMAIL_CONFIG.dev_email})
         
         assert send_password_response.status_code == 200
+
+
+
 

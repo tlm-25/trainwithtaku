@@ -27,18 +27,18 @@ async def upload_web_source_to_database(url:str):
 
     print(response)
 
-asyncio.run(upload_pdf_to_database(file_path="pdf_documents/improve_pull_ups.pdf"))
-# asyncio.run(upload_web_source_to_database(url="https://www.nhs.uk/live-well/eat-well/food-types/different-fats-nutrition/#:~:text=Saturated%20fat%20guidelines&text=The%20government%20recommends%20that%3A,of%20saturated%20fat%20a%20day"))
+# asyncio.run(upload_pdf_to_database(file_path="pdf_documents/twt_hench_head_start.pdf"))
+asyncio.run(upload_web_source_to_database(url="https://pmc.ncbi.nlm.nih.gov/articles/PMC4090010/"))
 
 
 ### UPLOADED DOCUMENTS SO FAR: SEE BELOW
-
-# pdf_documents/twt_hench_head_start.pdf
-# https://pmc.ncbi.nlm.nih.gov/articles/PMC4090010/
-# https://www.strongerbyscience.com/reps-percentage/
-# https://jeffnippard.com/blogs/news/how-many-sets-do-you-need
-# https://jeffnippard.com/blogs/news/the-best-science-based-minimalist-workout-plan-under-45-mins
-#https://alexleonidas.com/alpha-destiny-novice-intermediate-hybrid-program"
-# https://www.strongerbyscience.com/periodization-data/
-# https://jeffnippard.com/blogs/news/how-to-build-muscle-and-lose-fat-at-the-same-time-step-by-step-explained-body-recomposition
-# https://www.nhs.uk/live-well/eat-well/food-types/different-fats-nutrition/#:~:text=Saturated%20fat%20guidelines&text=The%20government%20recommends%20that%3A,of%20saturated%20fat%20a%20day
+# pdf_documents/improve_pull_ups.pdf - DONE
+# pdf_documents/twt_hench_head_start.pdf - DONE
+# https://pmc.ncbi.nlm.nih.gov/articles/PMC4090010/ - DONE
+# https://www.strongerbyscience.com/reps-percentage/ - DONE
+# https://jeffnippard.com/blogs/news/how-many-sets-do-you-need - DONE
+# https://jeffnippard.com/blogs/news/the-best-science-based-minimalist-workout-plan-under-45-mins - DONE
+#https://alexleonidas.com/alpha-destiny-novice-intermediate-hybrid-program" - DONE
+# https://www.strongerbyscience.com/periodization-data/ - DONE
+# https://jeffnippard.com/blogs/news/how-to-build-muscle-and-lose-fat-at-the-same-time-step-by-step-explained-body-recomposition - DONE
+# https://www.nhs.uk/live-well/eat-well/food-types/different-fats-nutrition/#:~:text=Saturated%20fat%20guidelines&text=The%20government%20recommends%20that%3A,of%20saturated%20fat%20a%20day - DONE

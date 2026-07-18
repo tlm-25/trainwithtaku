@@ -1,6 +1,7 @@
 import toast from "react-hot-toast";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState } from "react";
+import { BASE_URL } from "../api";
 function ResetPasswordForm(){
     const [newPasswordInput,setNewPasswordInput] = useState("");
     const [confirmNewPasswordInput,setConfirmNewPasswordInput] = useState("");
@@ -72,7 +73,7 @@ function ResetPasswordForm(){
         
         console.log(resetToken)
 
-        const response = await fetch(`/api/reset_password`,{
+        const response = await fetch(`${BASE_URL}/api/reset_password`,{
             method: "POST",
             body: JSON.stringify({
 
