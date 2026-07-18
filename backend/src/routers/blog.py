@@ -43,8 +43,7 @@ def upload_blog_router()->APIRouter:
         # if article has an associate image upload to google cloud and get the image url
         if headline_image_file:
 
-            # create a client for google cloud storage
-            # client = storage.Client()
+            
 
             try:
                 async with aiohttp.ClientSession() as session:
