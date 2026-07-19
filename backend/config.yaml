@@ -43,8 +43,6 @@ domain:
   frontend_domain_main: trainwithtaku.com
 
 redis_config:
-  host: redis-10505.crce287.eu-west-2-2.ec2.cloud.redislabs.com
-  port: 10505
   database_name: trainwithtaku-redis-db
   local_redis_connection_string: "redis://localhost:6379"
 
@@ -58,6 +56,7 @@ redis_config:
 blogs:
   blog_collection_name: blogs
   bucket_name: twt-blogs
+  default_blog_image_file_name: twt-logo.png
 
   
 
