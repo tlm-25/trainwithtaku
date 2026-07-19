@@ -56,7 +56,6 @@ redis_config:
 blogs:
   blog_collection_name: blogs
   bucket_name: twt-blogs
-  default_blog_image_file_name: twt-logo.png
 
   
 

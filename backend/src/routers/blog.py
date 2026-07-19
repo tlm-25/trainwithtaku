@@ -12,6 +12,7 @@ import aiohttp
 import logging
 import uuid 
 from datetime import datetime 
+import os
 
 logging.basicConfig(level=logging.INFO)
 
@@ -87,12 +88,12 @@ def upload_blog_router()->APIRouter:
         else: 
             logging.warning("No image provided")
         
-            # save the blog info into mongodb database
+            # save the blog info into mongodb database - use default logo if no image upload image provided
             blog_info = {
                 "article_id": article_id,
                 "title": title,
                 "article_text": article_text,
-                "headline_image_url": None,
+                "headline_image_url": config.blogs.default_blog_image_url,
                 "date": current_date_yyyy_mm_dd
             }
 
@@ -108,7 +109,38 @@ def upload_blog_router()->APIRouter:
         
         
         return JSONResponse(content={"message":"Blog uploaded successfully"},status_code=200)
+    
 
-        
+    @router.get("/blogs")
+    async def fetch_blogs(
+        page: int = 1,
+        limit: int = 10,
+        database: AsyncDatabase = Depends(create_or_get_database)
+    ):
+        blog_collection_name = config.blogs.blog_collection_name
+        article_info_collection = database[blog_collection_name]
+
+        skip = (page - 1) * limit
+
+        # pagination - get the "next" 10 items, ordered by date by default
+        cursor = article_info_collection.find().sort("date", -1).skip(skip).limit(limit)
+        blogs = await cursor.to_list(length=limit)
+
+        # get total number of artucles
+        total_count = await article_info_collection.count_documents({})
+
+        for blog in blogs:
+            blog["_id"] = str(blog["_id"])
+
+        return JSONResponse(content={
+            "blogs": blogs,
+            "page": page,
+            "limit": limit,
+            "total_count": total_count,
+            "total_pages": (total_count + limit - 1) // limit
+        }, status_code=200)
+            
 
     return router
+
+

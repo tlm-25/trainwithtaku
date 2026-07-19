@@ -26,6 +26,7 @@ FRONTEND_DEV_URL= os.getenv("FRONTEND_DEV_URL")
 FRONTEND_MAIN_URL = os.getenv("FRONTEND_MAIN_URL")
 REDIS_HOST = os.getenv("REDIS_HOST")
 REDIS_PORT = os.getenv("REDIS_PORT")
+DEFAULT_BLOG_IMAGE_URL = os.getenv("DEFAULT_BLOG_IMAGE_URL")
 class EnvConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
     app_environment:str
@@ -114,7 +115,7 @@ class BlogConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
     blog_collection_name:str
     bucket_name:str
-    default_blog_image_file_name:str
+    default_blog_image_url:str
 
 
 
@@ -195,6 +196,8 @@ def load_config_from_yaml(yaml_config_path:str)->ProjectConfig:
 
     
     config_dict["redis_config"]["redis_connection_string"] = redis_connection_string
+
+    config_dict["blogs"]["default_blog_image_url"] = DEFAULT_BLOG_IMAGE_URL
     
 
 
