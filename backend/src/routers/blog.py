@@ -10,7 +10,8 @@ from google.cloud import storage
 from gcloud.aio.storage import Storage
 import aiohttp 
 import logging
-import uuid  
+import uuid 
+from datetime import datetime 
 
 logging.basicConfig(level=logging.INFO)
 
@@ -37,6 +38,9 @@ def upload_blog_router()->APIRouter:
         
         # Random string for article id
         article_id = str(uuid.uuid4())
+
+        current_datetime =  datetime.now()
+        current_date_yyyy_mm_dd = datetime.strftime(current_datetime,format="%Y-%m-%d")
 
         # if image uploaded, save it to google cloud storage
         # client = storage.client()
@@ -74,6 +78,7 @@ def upload_blog_router()->APIRouter:
                 "title": title,
                 "article_text": article_text,
                 "headline_image_url": image_gcs_url,
+                "date":current_date_yyyy_mm_dd
             }
 
 
@@ -87,7 +92,8 @@ def upload_blog_router()->APIRouter:
                 "article_id": article_id,
                 "title": title,
                 "article_text": article_text,
-                "headline_image_url": None
+                "headline_image_url": None,
+                "date": current_date_yyyy_mm_dd
             }
 
 
