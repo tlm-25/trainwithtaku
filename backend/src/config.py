@@ -24,6 +24,8 @@ TEST_CONVERSATION_ID = os.getenv("TEST_CONVERSATION_ID")
 MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
 FRONTEND_DEV_URL= os.getenv("FRONTEND_DEV_URL")
 FRONTEND_MAIN_URL = os.getenv("FRONTEND_MAIN_URL")
+REDIS_HOST = os.getenv("REDIS_HOST")
+REDIS_PORT = os.getenv("REDIS_PORT")
 class EnvConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
     app_environment:str
@@ -112,6 +114,7 @@ class BlogConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
     blog_collection_name:str
     bucket_name:str
+    default_blog_image_file_name:str
 
 
 
@@ -183,15 +186,12 @@ def load_config_from_yaml(yaml_config_path:str)->ProjectConfig:
 
     config_dict["env_config"]=  env_config.model_dump()
 
-    # get redis databse details 
-    redis_host = config_dict["redis_config"]["host"]
-
-   
-    redis_port = config_dict["redis_config"]["port"] 
-
     
+    config_dict["redis_config"]["host"] = REDIS_HOST
+    config_dict["redis_config"]["port"] = REDIS_PORT
+
     # construct connection string
-    redis_connection_string = f"redis://default:{REDIS_PASSWORD}@{redis_host}:{redis_port}"
+    redis_connection_string = f"redis://default:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}"
 
     
     config_dict["redis_config"]["redis_connection_string"] = redis_connection_string

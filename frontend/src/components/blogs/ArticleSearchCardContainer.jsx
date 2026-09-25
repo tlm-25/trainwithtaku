@@ -19,7 +19,7 @@ function ArticleSearchCardContainer (){
                 <ArticleCard key={index}
                             imageSource={article.headline_image_url} 
                             articleHeadline={article.headline} 
-                            articleContentSample={article.article_text_sample} />
+                            articleContentSample={article.article_text.substring(0,40)} />
 
 
             ))}
